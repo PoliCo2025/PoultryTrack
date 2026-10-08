@@ -11,13 +11,13 @@ import com.example.syncore.data.local.entity.DatabaseEnums.UserRole;
 
 import java.util.UUID;
 
-/** Farm-scoped staff account metadata. Authentication secrets intentionally do not belong here. */
+/** Farm-scoped staff account metadata. Usernames are unique within a farm; secrets are not stored here. */
 @Entity(tableName = "users",
         foreignKeys = @ForeignKey(entity = FarmEntity.class, parentColumns = "farm_id", childColumns = "farm_id",
                 onDelete = ForeignKey.RESTRICT, onUpdate = ForeignKey.CASCADE),
         indices = {
                 @Index(value = {"farm_id"}),
-                @Index(value = {"username_normalized"}, unique = true),
+                @Index(value = {"farm_id", "username_normalized"}, unique = true),
                 @Index(value = {"farm_id", "user_id"}, unique = true)
         })
 public class UserEntity {

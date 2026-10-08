@@ -25,7 +25,7 @@ import java.util.UUID;
         },
         indices = {
                 @Index(value = {"farm_id", "product_id", "occurred_at_epoch_ms"}),
-                @Index(value = {"event_type", "source_type", "source_record_id"}, unique = true),
+                @Index(value = {"event_type", "source_type", "source_record_id", "product_id"}, unique = true),
                 @Index(value = {"product_id"}),
                 @Index(value = {"farm_id", "actor_user_id"}), @Index(value = {"farm_id", "device_id"})
         })

@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "com.example.syncore"
+    sourceSets {
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
+    }
     compileSdk {
         version = release(37)
     }

@@ -7,6 +7,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.example.syncore.data.local.dao.AdjustmentRequestDao;
@@ -57,10 +58,24 @@ import com.example.syncore.data.local.entity.UserEntity;
         InventoryLedgerEntity.class,
         SyncOutboxEntity.class,
         AuditLogEntity.class
-}, version = 1, exportSchema = true)
+}, version = 2, exportSchema = true)
 @TypeConverters(DatabaseConverters.class)
 public abstract class PoultryTrackDatabase extends RoomDatabase {
     private static volatile PoultryTrackDatabase instance;
+
+    /** Adds product-level source idempotency and makes account-name uniqueness farm-scoped. */
+    public static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("DROP INDEX IF EXISTS `index_inventory_ledger_event_type_source_type_source_record_id`");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS " +
+                    "`index_inventory_ledger_event_type_source_type_source_record_id_product_id` " +
+                    "ON `inventory_ledger` (`event_type`, `source_type`, `source_record_id`, `product_id`)");
+            database.execSQL("DROP INDEX IF EXISTS `index_users_username_normalized`");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_users_farm_id_username_normalized` " +
+                    "ON `users` (`farm_id`, `username_normalized`)");
+        }
+    };
 
     public abstract FarmDao farmDao();
     public abstract DeviceDao deviceDao();
@@ -87,6 +102,7 @@ public abstract class PoultryTrackDatabase extends RoomDatabase {
                     result = Room.databaseBuilder(context.getApplicationContext(),
                                     PoultryTrackDatabase.class, "poultrytrack.db")
                             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                            .addMigrations(MIGRATION_1_2)
                             .addCallback(initialCallback())
                             .build();
                     instance = result;

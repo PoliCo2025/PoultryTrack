@@ -23,9 +23,9 @@ Room database code lives under `app/src/main/java/com/example/syncore/data/local
 
 The current inventory balance is a query over signed ledger entries rather than a second mutable stock value. Money is stored as integer minor units with a currency code. Sale items keep the price and line-total snapshots used at the time of sale. A new database is seeded only with the four reference egg sizes; it does not create demo farms, users, sales, harvests, or other transactions.
 
-The database is at schema version 1. Exported schema files are stored under `app/schemas`; future schema changes should add explicit migrations. The database does not fall back to destructive migration.
+The database is at schema version 2. Exported schema files are stored under `app/schemas`; future schema changes should add explicit migrations. The database does not fall back to destructive migration. Migration 1→2 adds product-level inventory event uniqueness and makes normalized usernames unique within a farm.
 
-Instrumented database tests cover Room persistence, foreign keys, effective price history, immutable sale snapshots, unique receipts, ledger balances, shifts, adjustments, outbox/audit records, and atomic sale/harvest writes. Run them on a connected Android device or emulator with:
+Instrumented database tests cover Room persistence, foreign keys, effective price history, immutable sale snapshots, unique receipts, ledger balances, shifts, adjustments, outbox/audit records, atomic sale/harvest writes, multi-product ledger events, farm-scoped usernames, and the 1→2 migration. Run them on a connected Android device or emulator with:
 
 ```shell
 ./gradlew :app:connectedDebugAndroidTest
@@ -68,3 +68,8 @@ The app is branded PoultryTrack, while the Android namespace and application ID 
 ## Phase 1 boundaries
 
 This phase adds persistence structures and storage-only aggregate writes. It does not implement POS calculations, stock posting, harvest inventory updates, adjustment approval behavior, authentication, authorization, network requests, a sync engine, or report calculations. The Android namespace and application ID still use the earlier `com.example.syncore` identifier, and the theme is still named `Theme.Syncore`.
+
+## Phase 1.5 architecture decisions
+
+- **Farm/account scope:** The local schema explicitly supports multiple farms in one database: farm records are first-class, operational records carry `farm_id`, and farm-facing queries filter by it. Normalized usernames are therefore unique per farm. Any future sign-in flow must establish a farm context before looking up a username; authentication itself is not implemented.
+- **Android backup:** The manifest enables backup and references both legacy and Android 12+ rules. The legacy `backup_rules.xml` defines no include/exclude filters. The newer `data_extraction_rules.xml` has an empty cloud-backup section and no device-transfer rules. Android Auto Backup includes app data by default when rules do not exclude it, so `poultrytrack.db` is currently eligible for backup/transfer. No product backup policy is defined, and no exclusions were added. Before deploying real data, decide whether farm records, user/account metadata, sales, inventory, and audit records should be included in cloud backup and device-to-device transfer. See [Android Auto Backup](https://developer.android.com/identity/data/autobackup) and [Android 12 backup rule changes](https://developer.android.com/about/versions/12/behavior-changes-12#backup).

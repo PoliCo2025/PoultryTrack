@@ -15,6 +15,7 @@ public interface UserDao {
     @Insert(onConflict = OnConflictStrategy.ABORT) void insert(UserEntity user);
     @Update int update(UserEntity user);
     @Query("SELECT * FROM users WHERE user_id = :userId LIMIT 1") UserEntity findById(String userId);
-    @Query("SELECT * FROM users WHERE username_normalized = :usernameNormalized LIMIT 1") UserEntity findByNormalizedUsername(String usernameNormalized);
+    @Query("SELECT * FROM users WHERE farm_id = :farmId AND username_normalized = :usernameNormalized LIMIT 1")
+    UserEntity findByFarmAndNormalizedUsername(String farmId, String usernameNormalized);
     @Query("SELECT * FROM users WHERE farm_id = :farmId ORDER BY display_name") List<UserEntity> getForFarm(String farmId);
 }

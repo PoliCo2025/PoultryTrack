@@ -7,6 +7,7 @@ import android.view.ViewStub;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -26,6 +27,22 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setNavigationBarColor(Color.rgb(244, 246, 242));
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                if (!backStack.isEmpty()) {
+                    goBack();
+                } else if (!current.equals("dashboard") && !current.equals("login")) {
+                    show("dashboard");
+                } else {
+                    setEnabled(false);
+                    try {
+                        getOnBackPressedDispatcher().onBackPressed();
+                    } finally {
+                        setEnabled(true);
+                    }
+                }
+            }
+        });
         show("login");
     }
 
@@ -196,10 +213,4 @@ public class MainActivity extends AppCompatActivity {
         else show("dashboard");
     }
 
-    @Override public void onBackPressed() {
-        if (!backStack.isEmpty()) goBack();
-        else if (current.equals("login")) super.onBackPressed();
-        else if (!current.equals("dashboard")) show("dashboard");
-        else super.onBackPressed();
-    }
 }

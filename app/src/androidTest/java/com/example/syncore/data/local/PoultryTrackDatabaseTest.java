@@ -3,8 +3,11 @@ package com.example.syncore.data.local;
 import android.database.sqlite.SQLiteConstraintException;
 
 import androidx.room.Room;
+import androidx.room.testing.MigrationTestHelper;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.example.syncore.data.local.entity.AdjustmentRequestEntity;
 import com.example.syncore.data.local.entity.AuditLogEntity;
@@ -35,8 +38,10 @@ import com.example.syncore.data.repository.SaleRepository;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,6 +53,9 @@ import static org.junit.Assert.fail;
 /** Persistence and referential-integrity tests only; no business calculations are tested here. */
 @RunWith(AndroidJUnit4.class)
 public class PoultryTrackDatabaseTest {
+    @Rule public final MigrationTestHelper migrationTestHelper = new MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(), PoultryTrackDatabase.class);
+
     private PoultryTrackDatabase database;
     private FarmEntity farm;
     private DeviceEntity device;
@@ -98,7 +106,39 @@ public class PoultryTrackDatabaseTest {
         UserEntity found = database.userDao().findById(user.userId);
         assertNotNull(found);
         assertEquals(UserRole.SALES_PERSONNEL, found.role);
-        assertEquals(user.userId, database.userDao().findByNormalizedUsername("maria.santos").userId);
+        assertEquals(user.userId, database.userDao().findByFarmAndNormalizedUsername(
+                farm.farmId, "maria.santos").userId);
+    }
+
+    @Test public void usernamesAreUniqueWithinEachFarm() {
+        FarmEntity otherFarm = new FarmEntity();
+        otherFarm.farmId = "farm-second";
+        otherFarm.name = "Second Farm";
+        database.farmDao().insert(otherFarm);
+
+        UserEntity sameNameAtOtherFarm = new UserEntity();
+        sameNameAtOtherFarm.farmId = otherFarm.farmId;
+        sameNameAtOtherFarm.username = "maria.santos";
+        sameNameAtOtherFarm.usernameNormalized = "maria.santos";
+        sameNameAtOtherFarm.displayName = "Maria Santos at Second Farm";
+        database.userDao().insert(sameNameAtOtherFarm);
+
+        assertEquals(user.userId, database.userDao().findByFarmAndNormalizedUsername(
+                farm.farmId, "maria.santos").userId);
+        assertEquals(sameNameAtOtherFarm.userId, database.userDao().findByFarmAndNormalizedUsername(
+                otherFarm.farmId, "maria.santos").userId);
+
+        UserEntity duplicateAtSameFarm = new UserEntity();
+        duplicateAtSameFarm.farmId = farm.farmId;
+        duplicateAtSameFarm.username = "MARIA.SANTOS";
+        duplicateAtSameFarm.usernameNormalized = "maria.santos";
+        duplicateAtSameFarm.displayName = "Duplicate User";
+        try {
+            database.userDao().insert(duplicateAtSameFarm);
+            fail("Duplicate normalized usernames within one farm must be rejected.");
+        } catch (SQLiteConstraintException expected) {
+            // Expected farm-scoped unique-index check.
+        }
     }
 
     @Test public void foreignKeysRejectMissingFarmAndCrossFarmActor() {
@@ -243,6 +283,107 @@ public class PoultryTrackDatabaseTest {
         assertNotNull(balance);
         assertEquals(48L, balance.quantityOnHand);
         assertEquals(2, database.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.MEDIUM_ID).size());
+    }
+
+    @Test public void ledgerAllowsDifferentProductsForOneSourceButRejectsDuplicateProduct() {
+        InventoryLedgerEntity small = ledger("ledger-sale-small", InventoryEventType.SALE,
+                "SALE", "sale-multi-size", -10);
+        small.productId = ProductEntity.SMALL_ID;
+        InventoryLedgerEntity medium = ledger("ledger-sale-medium", InventoryEventType.SALE,
+                "SALE", "sale-multi-size", -20);
+        medium.productId = ProductEntity.MEDIUM_ID;
+        InventoryLedgerEntity large = ledger("ledger-sale-large", InventoryEventType.SALE,
+                "SALE", "sale-multi-size", -5);
+        large.productId = ProductEntity.LARGE_ID;
+
+        database.inventoryLedgerDao().insertAll(java.util.Arrays.asList(small, medium, large));
+        assertEquals(3, database.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size()
+                + database.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.MEDIUM_ID).size()
+                + database.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.LARGE_ID).size());
+
+        InventoryLedgerEntity duplicateSmall = ledger("ledger-sale-small-duplicate", InventoryEventType.SALE,
+                "SALE", "sale-multi-size", -10);
+        duplicateSmall.productId = ProductEntity.SMALL_ID;
+        try {
+            database.inventoryLedgerDao().insert(duplicateSmall);
+            fail("A source transaction cannot post the same product twice.");
+        } catch (SQLiteConstraintException expected) {
+            // Expected event/source/product unique-index check.
+        }
+    }
+
+    @Test public void migration1To2PreservesRowsAndAppliesUpdatedLedgerConstraint() throws IOException {
+        String databaseName = "poultrytrack-phase-1-5-migration";
+        SupportSQLiteDatabase versionOne = migrationTestHelper.createDatabase(databaseName, 1);
+        versionOne.execSQL("INSERT INTO farms (farm_id, name, location, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('farm-migration', 'Migration Farm', NULL, 1, 100, 100)");
+        versionOne.execSQL("INSERT INTO products (product_id, name, unit, sort_order, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('egg-small', 'Small', 'egg', 0, 1, 100, 100)");
+        versionOne.execSQL("INSERT INTO products (product_id, name, unit, sort_order, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('egg-medium', 'Medium', 'egg', 1, 1, 100, 100)");
+        versionOne.execSQL("INSERT INTO inventory_ledger (ledger_entry_id, farm_id, product_id, quantity_delta_eggs, " +
+                "event_type, source_type, source_record_id, actor_user_id, device_id, occurred_at_epoch_ms) " +
+                "VALUES ('ledger-v1', 'farm-migration', 'egg-small', -10, 'SALE', 'SALE', 'sale-v1', NULL, NULL, 200)");
+        versionOne.close();
+
+        SupportSQLiteDatabase migratedSchema = migrationTestHelper.runMigrationsAndValidate(
+                databaseName, 2, true, PoultryTrackDatabase.MIGRATION_1_2);
+        migratedSchema.close();
+
+        PoultryTrackDatabase migrated = Room.databaseBuilder(
+                        ApplicationProvider.getApplicationContext(), PoultryTrackDatabase.class, databaseName)
+                .allowMainThreadQueries()
+                .addMigrations(PoultryTrackDatabase.MIGRATION_1_2)
+                .build();
+        try {
+            assertEquals(1, migrated.inventoryLedgerDao().getHistory(
+                    "farm-migration", ProductEntity.SMALL_ID).size());
+
+            InventoryLedgerEntity secondProduct = new InventoryLedgerEntity();
+            secondProduct.ledgerEntryId = "ledger-v2-medium";
+            secondProduct.farmId = "farm-migration";
+            secondProduct.productId = ProductEntity.MEDIUM_ID;
+            secondProduct.eventType = InventoryEventType.SALE;
+            secondProduct.sourceType = "SALE";
+            secondProduct.sourceRecordId = "sale-v1";
+            secondProduct.quantityDeltaEggs = -20;
+            secondProduct.occurredAtEpochMs = 300;
+            migrated.inventoryLedgerDao().insert(secondProduct);
+            assertEquals(1, migrated.inventoryLedgerDao().getHistory(
+                    "farm-migration", ProductEntity.MEDIUM_ID).size());
+
+            InventoryLedgerEntity duplicateProduct = new InventoryLedgerEntity();
+            duplicateProduct.ledgerEntryId = "ledger-v2-small-duplicate";
+            duplicateProduct.farmId = "farm-migration";
+            duplicateProduct.productId = ProductEntity.SMALL_ID;
+            duplicateProduct.eventType = InventoryEventType.SALE;
+            duplicateProduct.sourceType = "SALE";
+            duplicateProduct.sourceRecordId = "sale-v1";
+            duplicateProduct.quantityDeltaEggs = -1;
+            duplicateProduct.occurredAtEpochMs = 400;
+            try {
+                migrated.inventoryLedgerDao().insert(duplicateProduct);
+                fail("Migration must preserve duplicate protection for the same source product.");
+            } catch (SQLiteConstraintException expected) {
+                // Expected migrated unique-index check.
+            }
+
+            InventoryLedgerEntity invalidFarm = new InventoryLedgerEntity();
+            invalidFarm.ledgerEntryId = "ledger-invalid-farm";
+            invalidFarm.farmId = "missing-farm";
+            invalidFarm.productId = ProductEntity.SMALL_ID;
+            invalidFarm.eventType = InventoryEventType.SALE;
+            invalidFarm.sourceType = "SALE";
+            invalidFarm.sourceRecordId = "sale-invalid-farm";
+            try {
+                migrated.inventoryLedgerDao().insert(invalidFarm);
+                fail("The migration must retain the ledger farm foreign key.");
+            } catch (SQLiteConstraintException expected) {
+                // Expected foreign-key check after migration.
+            }
+        } finally {
+            migrated.close();
+        }
     }
 
     @Test public void shiftsAndAdjustmentRequestsPersistTheirStatusesAndActors() {
