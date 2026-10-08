@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="58dp"
+    android:background="@color/white"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp">
+
+    <LinearLayout android:id="@+id/nav_home" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1" android:gravity="center" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="3dp">
+        <TextView android:id="@+id/nav_home_icon" android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center" android:text="⌂" android:textSize="17sp" />
+        <TextView android:id="@+id/nav_home_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Home" android:textSize="9sp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_pos" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1" android:gravity="center" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="3dp">
+        <TextView android:id="@+id/nav_pos_icon" android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center" android:text="▣" android:textSize="16sp" />
+        <TextView android:id="@+id/nav_pos_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="POS" android:textSize="9sp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_inventory" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1" android:gravity="center" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="3dp">
+        <TextView android:id="@+id/nav_inventory_icon" android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center" android:text="◉" android:textSize="16sp" />
+        <TextView android:id="@+id/nav_inventory_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Inventory" android:textSize="8sp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_reports" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1" android:gravity="center" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="3dp">
+        <TextView android:id="@+id/nav_reports_icon" android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center" android:text="▥" android:textSize="16sp" />
+        <TextView android:id="@+id/nav_reports_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Reports" android:textSize="9sp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_more" android:layout_width="0dp" android:layout_height="50dp" android:layout_weight="1" android:gravity="center" android:orientation="vertical" android:paddingTop="4dp" android:paddingBottom="3dp">
+        <TextView android:id="@+id/nav_more_icon" android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center" android:text="☰" android:textSize="16sp" />
+        <TextView android:id="@+id/nav_more_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="More" android:textSize="9sp" />
+    </LinearLayout>
+</LinearLayout>

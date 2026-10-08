@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Main Palette -->
+    <color name="farm_green">#285D3B</color>
+    <color name="soft_green">#E8F1E9</color>
+    <color name="off_white">#F4F6F2</color>
+    <color name="white">#FFFFFF</color>
+    <color name="dark_charcoal_green">#202B23</color>
+    <color name="muted_gray_green">#647067</color>
+    <color name="light_sage_border">#DCE3DA</color>
+    <color name="pale_gray_green">#EDF0EB</color>
+
+    <!-- Status / Feedback -->
+    <color name="status_success">#285D3B</color>
+    <color name="status_success_background">#E8F1E9</color>
+
+    <color name="status_pending">#81591C</color>
+    <color name="status_pending_background">#FFF2D8</color>
+
+    <color name="status_info">#355F83</color>
+    <color name="status_info_background">#EAF1F8</color>
+
+    <color name="status_error">#A33D32</color>
+
+</resources>

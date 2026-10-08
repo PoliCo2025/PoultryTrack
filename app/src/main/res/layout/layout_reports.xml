@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/off_white"
+    android:orientation="vertical">
+
+    <include layout="@layout/pt_header" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/page_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="12dp">
+
+            <ViewStub android:id="@+id/reports_loading_state" android:layout="@layout/pt_state_loading" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
+            <ViewStub android:id="@+id/reports_empty_state" android:layout="@layout/pt_state_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
+            <ViewStub android:id="@+id/reports_error_state" android:layout="@layout/pt_state_error" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Report date" android:textColor="@color/dark_charcoal_green" android:textSize="10sp" android:textStyle="bold" />
+                <EditText android:id="@+id/report_date" android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="4dp" android:background="@drawable/input_outline" android:hint="Today · 8 Oct 2026" android:paddingStart="10dp" android:paddingEnd="10dp" android:singleLine="true" android:textColor="@color/dark_charcoal_green" android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:background="@drawable/status_pending_card" android:orientation="vertical" android:padding="12dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="⌁  Local report · through 10:42 AM" android:textColor="@color/status_pending" android:textSize="12sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Includes pending records on Farm Counter 01. Online reports update after sync." android:textColor="@color/dark_charcoal_green" android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="6dp" android:layout_marginBottom="6dp" android:background="@drawable/login_card" android:orientation="vertical" android:padding="10dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CASH SALES" android:textColor="@color/muted_gray_green" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="₱3,000" android:textColor="@color/dark_charcoal_green" android:textSize="19sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="6 transactions" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="6dp" android:layout_marginBottom="6dp" android:background="@drawable/login_card" android:orientation="vertical" android:padding="10dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="EGGS SOLD" android:textColor="@color/muted_gray_green" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="390" android:textColor="@color/dark_charcoal_green" android:textSize="19sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="13 trays equivalent" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:layout_marginBottom="6dp" android:text="Sales by hour" android:textColor="@color/dark_charcoal_green" android:textSize="13sp" android:textStyle="bold" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:background="@drawable/login_card" android:orientation="vertical" android:padding="12dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cash sales · PHP" android:textColor="@color/dark_charcoal_green" android:textSize="12sp" android:textStyle="bold" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="bottom" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical" android:contentDescription="6 AM, 240 pesos in sales">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="240" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="92dp" android:layout_marginTop="4dp" android:background="@drawable/chart_bar_track" android:padding="2dp"><View android:layout_width="match_parent" android:layout_height="30dp" android:layout_gravity="bottom" android:background="@drawable/chart_bar_fill" /></FrameLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center" android:text="6 AM" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical" android:contentDescription="7 AM, 370 pesos in sales">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="370" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="92dp" android:layout_marginTop="4dp" android:background="@drawable/chart_bar_track" android:padding="2dp"><View android:layout_width="match_parent" android:layout_height="46dp" android:layout_gravity="bottom" android:background="@drawable/chart_bar_fill" /></FrameLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center" android:text="7 AM" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical" android:contentDescription="8 AM, 480 pesos in sales">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="480" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="92dp" android:layout_marginTop="4dp" android:background="@drawable/chart_bar_track" android:padding="2dp"><View android:layout_width="match_parent" android:layout_height="60dp" android:layout_gravity="bottom" android:background="@drawable/chart_bar_fill" /></FrameLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center" android:text="8 AM" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical" android:contentDescription="9 AM, 720 pesos in sales">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="720" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="92dp" android:layout_marginTop="4dp" android:background="@drawable/chart_bar_track" android:padding="2dp"><View android:layout_width="match_parent" android:layout_height="88dp" android:layout_gravity="bottom" android:background="@drawable/chart_bar_fill" /></FrameLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center" android:text="9 AM" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical" android:contentDescription="10 AM, 660 pesos in sales">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="660" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                        <FrameLayout android:layout_width="match_parent" android:layout_height="92dp" android:layout_marginTop="4dp" android:background="@drawable/chart_bar_track" android:padding="2dp"><View android:layout_width="match_parent" android:layout_height="80dp" android:layout_gravity="bottom" android:background="@drawable/chart_bar_fill" /></FrameLayout>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center" android:text="10 AM" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+                    </LinearLayout>
+                </LinearLayout>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Hourly cash sales · sample values" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:layout_marginBottom="6dp" android:text="Inventory today" android:textColor="@color/dark_charcoal_green" android:textSize="13sp" android:textStyle="bold" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:background="@drawable/login_card" android:orientation="vertical" android:padding="12dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="View breakdown" android:textColor="@color/dark_charcoal_green" android:textSize="12sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Available / harvested&#10;3,780 / 600 eggs" android:textColor="@color/dark_charcoal_green" android:textSize="11sp" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Approved losses · 30 eggs" android:textColor="@color/muted_gray_green" android:textSize="9sp" />
+            </LinearLayout>
+            <TextView android:id="@+id/export_report" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp" android:background="@drawable/signin_button" android:gravity="center" android:text="▣  Export PDF" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold" />
+            <TextView android:id="@+id/share_report" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp" android:background="@drawable/signin_button" android:gravity="center" android:text="♧  Share PDF" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold" />
+        </LinearLayout>
+    </ScrollView>
+    <include layout="@layout/pt_bottom_nav" />
+</LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="18dp" android:paddingTop="8dp" android:paddingEnd="18dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+  <TextView android:id="@+id/page_back" android:layout_width="32dp" android:layout_height="40dp" android:contentDescription="Back" android:gravity="center" android:text="‹" android:textColor="@color/farm_green" android:textSize="28sp" android:visibility="gone" />
+  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+   <TextView android:id="@+id/page_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="PoultryTrack" android:textColor="@color/dark_charcoal_green" android:textSize="19sp" android:textStyle="bold" />
+   <TextView android:id="@+id/page_subtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Maria Santos · Sales Personnel" android:textColor="@color/muted_gray_green" android:textSize="10sp" />
+  </LinearLayout>
+  <TextView android:layout_width="30dp" android:layout_height="30dp" android:background="@drawable/role_chip" android:gravity="center" android:text="MS" android:textColor="@color/farm_green" android:textSize="10sp" android:textStyle="bold" />
+ </LinearLayout>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:background="@drawable/offline_notice" android:padding="8dp" android:text="⌁  Offline · Changes saved on this device" android:textColor="#81591C" android:textSize="10sp" />
+</LinearLayout>

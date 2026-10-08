@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/login_card"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/empty_state_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/role_chip"
+        android:gravity="center"
+        android:text="▤"
+        android:textColor="@color/farm_green"
+        android:textSize="22sp"
+        android:contentDescription="Empty list" />
+
+    <TextView
+        android:id="@+id/empty_state_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text="Nothing here yet"
+        android:textColor="@color/dark_charcoal_green"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/empty_state_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:text="Records will appear here when they are available."
+        android:textColor="@color/muted_gray_green"
+        android:textSize="11sp" />
+</LinearLayout>
