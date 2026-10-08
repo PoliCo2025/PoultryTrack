@@ -1,0 +1,1904 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "12b55fe65d26475d1ac94853a73debea",
+    "entities": [
+      {
+        "tableName": "farms",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`farm_id` TEXT NOT NULL, `name` TEXT NOT NULL, `location` TEXT, `is_active` INTEGER NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`farm_id`))",
+        "fields": [
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "farm_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_farms_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_farms_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "devices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`device_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `device_name` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `last_seen_at_epoch_ms` INTEGER, PRIMARY KEY(`device_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceName",
+            "columnName": "device_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAtEpochMs",
+            "columnName": "last_seen_at_epoch_ms",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "device_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_devices_farm_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_devices_farm_id` ON `${TABLE_NAME}` (`farm_id`)"
+          },
+          {
+            "name": "index_devices_farm_id_device_id",
+            "unique": true,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_devices_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`user_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `username` TEXT NOT NULL, `username_normalized` TEXT NOT NULL, `display_name` TEXT NOT NULL, `role` TEXT NOT NULL, `is_active` INTEGER NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`user_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usernameNormalized",
+            "columnName": "username_normalized",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "user_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_users_farm_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_users_farm_id` ON `${TABLE_NAME}` (`farm_id`)"
+          },
+          {
+            "name": "index_users_username_normalized",
+            "unique": true,
+            "columnNames": [
+              "username_normalized"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_users_username_normalized` ON `${TABLE_NAME}` (`username_normalized`)"
+          },
+          {
+            "name": "index_users_farm_id_user_id",
+            "unique": true,
+            "columnNames": [
+              "farm_id",
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_users_farm_id_user_id` ON `${TABLE_NAME}` (`farm_id`, `user_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`product_id` TEXT NOT NULL, `name` TEXT NOT NULL, `unit` TEXT NOT NULL, `sort_order` INTEGER NOT NULL, `is_active` INTEGER NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`product_id`))",
+        "fields": [
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "product_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_products_name",
+            "unique": true,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_products_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "price_versions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`price_version_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `amount_minor_units` INTEGER NOT NULL, `currency_code` TEXT NOT NULL, `effective_from_epoch_ms` INTEGER NOT NULL, `effective_to_epoch_ms` INTEGER, `version_number` INTEGER NOT NULL, `status` TEXT NOT NULL, `changed_by_user_id` TEXT, `created_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`price_version_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`product_id`) REFERENCES `products`(`product_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `changed_by_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "priceVersionId",
+            "columnName": "price_version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountMinorUnits",
+            "columnName": "amount_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currency_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "effectiveFromEpochMs",
+            "columnName": "effective_from_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "effectiveToEpochMs",
+            "columnName": "effective_to_epoch_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "versionNumber",
+            "columnName": "version_number",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "changedByUserId",
+            "columnName": "changed_by_user_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "price_version_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_price_versions_farm_id_product_id_version_number",
+            "unique": true,
+            "columnNames": [
+              "farm_id",
+              "product_id",
+              "version_number"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_price_versions_farm_id_product_id_version_number` ON `${TABLE_NAME}` (`farm_id`, `product_id`, `version_number`)"
+          },
+          {
+            "name": "index_price_versions_farm_id_product_id_effective_from_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "product_id",
+              "effective_from_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_price_versions_farm_id_product_id_effective_from_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `product_id`, `effective_from_epoch_ms`)"
+          },
+          {
+            "name": "index_price_versions_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_price_versions_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          },
+          {
+            "name": "index_price_versions_farm_id_changed_by_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "changed_by_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_price_versions_farm_id_changed_by_user_id` ON `${TABLE_NAME}` (`farm_id`, `changed_by_user_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "products",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "product_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "changed_by_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "shifts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`shift_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `device_id` TEXT, `started_at_epoch_ms` INTEGER NOT NULL, `ended_at_epoch_ms` INTEGER, `opening_cash_minor_units` INTEGER NOT NULL, `closing_cash_minor_units` INTEGER, `expected_cash_minor_units` INTEGER, `difference_cash_minor_units` INTEGER, `status` TEXT NOT NULL, PRIMARY KEY(`shift_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "shiftId",
+            "columnName": "shift_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startedAtEpochMs",
+            "columnName": "started_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedAtEpochMs",
+            "columnName": "ended_at_epoch_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "openingCashMinorUnits",
+            "columnName": "opening_cash_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "closingCashMinorUnits",
+            "columnName": "closing_cash_minor_units",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "expectedCashMinorUnits",
+            "columnName": "expected_cash_minor_units",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "differenceCashMinorUnits",
+            "columnName": "difference_cash_minor_units",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "shift_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_shifts_farm_id_started_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "started_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shifts_farm_id_started_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `started_at_epoch_ms`)"
+          },
+          {
+            "name": "index_shifts_farm_id_shift_id",
+            "unique": true,
+            "columnNames": [
+              "farm_id",
+              "shift_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_shifts_farm_id_shift_id` ON `${TABLE_NAME}` (`farm_id`, `shift_id`)"
+          },
+          {
+            "name": "index_shifts_farm_id_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shifts_farm_id_user_id` ON `${TABLE_NAME}` (`farm_id`, `user_id`)"
+          },
+          {
+            "name": "index_shifts_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shifts_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sales",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sale_id` TEXT NOT NULL, `receipt_number` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `actor_user_id` TEXT NOT NULL, `shift_id` TEXT, `device_id` TEXT, `sold_at_epoch_ms` INTEGER NOT NULL, `subtotal_minor_units` INTEGER NOT NULL, `total_minor_units` INTEGER NOT NULL, `cash_received_minor_units` INTEGER, `change_minor_units` INTEGER, `currency_code` TEXT NOT NULL, `status` TEXT NOT NULL, PRIMARY KEY(`sale_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `actor_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `shift_id`) REFERENCES `shifts`(`farm_id`, `shift_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "saleId",
+            "columnName": "sale_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receiptNumber",
+            "columnName": "receipt_number",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actorUserId",
+            "columnName": "actor_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shiftId",
+            "columnName": "shift_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "soldAtEpochMs",
+            "columnName": "sold_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subtotalMinorUnits",
+            "columnName": "subtotal_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalMinorUnits",
+            "columnName": "total_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cashReceivedMinorUnits",
+            "columnName": "cash_received_minor_units",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "changeMinorUnits",
+            "columnName": "change_minor_units",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currency_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sale_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sales_receipt_number",
+            "unique": true,
+            "columnNames": [
+              "receipt_number"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sales_receipt_number` ON `${TABLE_NAME}` (`receipt_number`)"
+          },
+          {
+            "name": "index_sales_farm_id_sale_id",
+            "unique": true,
+            "columnNames": [
+              "farm_id",
+              "sale_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sales_farm_id_sale_id` ON `${TABLE_NAME}` (`farm_id`, `sale_id`)"
+          },
+          {
+            "name": "index_sales_farm_id_sold_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "sold_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sales_farm_id_sold_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `sold_at_epoch_ms`)"
+          },
+          {
+            "name": "index_sales_farm_id_actor_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sales_farm_id_actor_user_id` ON `${TABLE_NAME}` (`farm_id`, `actor_user_id`)"
+          },
+          {
+            "name": "index_sales_farm_id_shift_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "shift_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sales_farm_id_shift_id` ON `${TABLE_NAME}` (`farm_id`, `shift_id`)"
+          },
+          {
+            "name": "index_sales_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sales_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "shifts",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "shift_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "shift_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sale_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sale_item_id` TEXT NOT NULL, `sale_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `price_version_id` TEXT, `quantity_eggs` INTEGER NOT NULL, `unit_price_minor_units` INTEGER NOT NULL, `line_total_minor_units` INTEGER NOT NULL, PRIMARY KEY(`sale_item_id`), FOREIGN KEY(`sale_id`) REFERENCES `sales`(`sale_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`product_id`) REFERENCES `products`(`product_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`price_version_id`) REFERENCES `price_versions`(`price_version_id`) ON UPDATE CASCADE ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "saleItemId",
+            "columnName": "sale_item_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saleId",
+            "columnName": "sale_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceVersionId",
+            "columnName": "price_version_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "quantityEggs",
+            "columnName": "quantity_eggs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unitPriceMinorUnits",
+            "columnName": "unit_price_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lineTotalMinorUnits",
+            "columnName": "line_total_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sale_item_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sale_items_sale_id_product_id",
+            "unique": true,
+            "columnNames": [
+              "sale_id",
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sale_items_sale_id_product_id` ON `${TABLE_NAME}` (`sale_id`, `product_id`)"
+          },
+          {
+            "name": "index_sale_items_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sale_items_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          },
+          {
+            "name": "index_sale_items_price_version_id",
+            "unique": false,
+            "columnNames": [
+              "price_version_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sale_items_price_version_id` ON `${TABLE_NAME}` (`price_version_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sales",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "sale_id"
+            ],
+            "referencedColumns": [
+              "sale_id"
+            ]
+          },
+          {
+            "table": "products",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "product_id"
+            ]
+          },
+          {
+            "table": "price_versions",
+            "onDelete": "SET NULL",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "price_version_id"
+            ],
+            "referencedColumns": [
+              "price_version_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "payments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`payment_id` TEXT NOT NULL, `sale_id` TEXT NOT NULL, `payment_method` TEXT NOT NULL, `amount_minor_units` INTEGER NOT NULL, `currency_code` TEXT NOT NULL, `received_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`payment_id`), FOREIGN KEY(`sale_id`) REFERENCES `sales`(`sale_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "paymentId",
+            "columnName": "payment_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saleId",
+            "columnName": "sale_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentMethod",
+            "columnName": "payment_method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountMinorUnits",
+            "columnName": "amount_minor_units",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currency_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAtEpochMs",
+            "columnName": "received_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "payment_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_payments_sale_id_received_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "sale_id",
+              "received_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_payments_sale_id_received_at_epoch_ms` ON `${TABLE_NAME}` (`sale_id`, `received_at_epoch_ms`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sales",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "sale_id"
+            ],
+            "referencedColumns": [
+              "sale_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "harvests",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`harvest_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `actor_user_id` TEXT NOT NULL, `device_id` TEXT, `harvested_at_epoch_ms` INTEGER NOT NULL, `notes` TEXT, `status` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`harvest_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `actor_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "harvestId",
+            "columnName": "harvest_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actorUserId",
+            "columnName": "actor_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "harvestedAtEpochMs",
+            "columnName": "harvested_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "harvest_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_harvests_farm_id_harvested_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "harvested_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_harvests_farm_id_harvested_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `harvested_at_epoch_ms`)"
+          },
+          {
+            "name": "index_harvests_farm_id_actor_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_harvests_farm_id_actor_user_id` ON `${TABLE_NAME}` (`farm_id`, `actor_user_id`)"
+          },
+          {
+            "name": "index_harvests_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_harvests_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "harvest_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`harvest_item_id` TEXT NOT NULL, `harvest_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `quantity_eggs` INTEGER NOT NULL, PRIMARY KEY(`harvest_item_id`), FOREIGN KEY(`harvest_id`) REFERENCES `harvests`(`harvest_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`product_id`) REFERENCES `products`(`product_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "harvestItemId",
+            "columnName": "harvest_item_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "harvestId",
+            "columnName": "harvest_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantityEggs",
+            "columnName": "quantity_eggs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "harvest_item_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_harvest_items_harvest_id_product_id",
+            "unique": true,
+            "columnNames": [
+              "harvest_id",
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_harvest_items_harvest_id_product_id` ON `${TABLE_NAME}` (`harvest_id`, `product_id`)"
+          },
+          {
+            "name": "index_harvest_items_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_harvest_items_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "harvests",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "harvest_id"
+            ],
+            "referencedColumns": [
+              "harvest_id"
+            ]
+          },
+          {
+            "table": "products",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "product_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "adjustment_requests",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`adjustment_request_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `requested_by_user_id` TEXT NOT NULL, `reviewed_by_user_id` TEXT, `product_id` TEXT NOT NULL, `device_id` TEXT, `quantity_delta_eggs` INTEGER NOT NULL, `reason` TEXT NOT NULL, `status` TEXT NOT NULL, `requested_at_epoch_ms` INTEGER NOT NULL, `reviewed_at_epoch_ms` INTEGER, `created_at_epoch_ms` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`adjustment_request_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `requested_by_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `reviewed_by_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`product_id`) REFERENCES `products`(`product_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "adjustmentRequestId",
+            "columnName": "adjustment_request_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestedByUserId",
+            "columnName": "requested_by_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewedByUserId",
+            "columnName": "reviewed_by_user_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "quantityDeltaEggs",
+            "columnName": "quantity_delta_eggs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestedAtEpochMs",
+            "columnName": "requested_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewedAtEpochMs",
+            "columnName": "reviewed_at_epoch_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMs",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "adjustment_request_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_adjustment_requests_farm_id_status_requested_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "status",
+              "requested_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_adjustment_requests_farm_id_status_requested_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `status`, `requested_at_epoch_ms`)"
+          },
+          {
+            "name": "index_adjustment_requests_farm_id_requested_by_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "requested_by_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_adjustment_requests_farm_id_requested_by_user_id` ON `${TABLE_NAME}` (`farm_id`, `requested_by_user_id`)"
+          },
+          {
+            "name": "index_adjustment_requests_farm_id_reviewed_by_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "reviewed_by_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_adjustment_requests_farm_id_reviewed_by_user_id` ON `${TABLE_NAME}` (`farm_id`, `reviewed_by_user_id`)"
+          },
+          {
+            "name": "index_adjustment_requests_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_adjustment_requests_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          },
+          {
+            "name": "index_adjustment_requests_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_adjustment_requests_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "requested_by_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "reviewed_by_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "products",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "product_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "inventory_ledger",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ledger_entry_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `quantity_delta_eggs` INTEGER NOT NULL, `event_type` TEXT NOT NULL, `source_type` TEXT NOT NULL, `source_record_id` TEXT NOT NULL, `actor_user_id` TEXT, `device_id` TEXT, `occurred_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`ledger_entry_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`product_id`) REFERENCES `products`(`product_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `actor_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "ledgerEntryId",
+            "columnName": "ledger_entry_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantityDeltaEggs",
+            "columnName": "quantity_delta_eggs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "event_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceType",
+            "columnName": "source_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceRecordId",
+            "columnName": "source_record_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actorUserId",
+            "columnName": "actor_user_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "occurredAtEpochMs",
+            "columnName": "occurred_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ledger_entry_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inventory_ledger_farm_id_product_id_occurred_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "product_id",
+              "occurred_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_ledger_farm_id_product_id_occurred_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `product_id`, `occurred_at_epoch_ms`)"
+          },
+          {
+            "name": "index_inventory_ledger_event_type_source_type_source_record_id",
+            "unique": true,
+            "columnNames": [
+              "event_type",
+              "source_type",
+              "source_record_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_inventory_ledger_event_type_source_type_source_record_id` ON `${TABLE_NAME}` (`event_type`, `source_type`, `source_record_id`)"
+          },
+          {
+            "name": "index_inventory_ledger_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_ledger_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          },
+          {
+            "name": "index_inventory_ledger_farm_id_actor_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_ledger_farm_id_actor_user_id` ON `${TABLE_NAME}` (`farm_id`, `actor_user_id`)"
+          },
+          {
+            "name": "index_inventory_ledger_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_ledger_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "products",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "product_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sync_outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`outbox_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `device_id` TEXT, `record_type` TEXT NOT NULL, `record_id` TEXT NOT NULL, `operation` TEXT NOT NULL, `sync_status` TEXT NOT NULL, `retry_count` INTEGER NOT NULL, `last_error` TEXT, `idempotency_key` TEXT NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `last_attempted_at_epoch_ms` INTEGER, PRIMARY KEY(`outbox_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "outboxId",
+            "columnName": "outbox_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recordType",
+            "columnName": "record_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordId",
+            "columnName": "record_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operation",
+            "columnName": "operation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "sync_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "last_error",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "idempotencyKey",
+            "columnName": "idempotency_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMs",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptedAtEpochMs",
+            "columnName": "last_attempted_at_epoch_ms",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "outbox_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sync_outbox_farm_id_sync_status_created_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "sync_status",
+              "created_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sync_outbox_farm_id_sync_status_created_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `sync_status`, `created_at_epoch_ms`)"
+          },
+          {
+            "name": "index_sync_outbox_idempotency_key",
+            "unique": true,
+            "columnNames": [
+              "idempotency_key"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sync_outbox_idempotency_key` ON `${TABLE_NAME}` (`idempotency_key`)"
+          },
+          {
+            "name": "index_sync_outbox_record_type_record_id",
+            "unique": false,
+            "columnNames": [
+              "record_type",
+              "record_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sync_outbox_record_type_record_id` ON `${TABLE_NAME}` (`record_type`, `record_id`)"
+          },
+          {
+            "name": "index_sync_outbox_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sync_outbox_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "audit_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`audit_log_id` TEXT NOT NULL, `farm_id` TEXT NOT NULL, `actor_user_id` TEXT, `device_id` TEXT, `action` TEXT NOT NULL, `affected_type` TEXT NOT NULL, `affected_record_id` TEXT NOT NULL, `occurred_at_epoch_ms` INTEGER NOT NULL, `details_json` TEXT, PRIMARY KEY(`audit_log_id`), FOREIGN KEY(`farm_id`) REFERENCES `farms`(`farm_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `actor_user_id`) REFERENCES `users`(`farm_id`, `user_id`) ON UPDATE CASCADE ON DELETE RESTRICT , FOREIGN KEY(`farm_id`, `device_id`) REFERENCES `devices`(`farm_id`, `device_id`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "auditLogId",
+            "columnName": "audit_log_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "farmId",
+            "columnName": "farm_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actorUserId",
+            "columnName": "actor_user_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "device_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "action",
+            "columnName": "action",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "affectedType",
+            "columnName": "affected_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "affectedRecordId",
+            "columnName": "affected_record_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurredAtEpochMs",
+            "columnName": "occurred_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detailsJson",
+            "columnName": "details_json",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "audit_log_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_audit_logs_farm_id_occurred_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "occurred_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_audit_logs_farm_id_occurred_at_epoch_ms` ON `${TABLE_NAME}` (`farm_id`, `occurred_at_epoch_ms`)"
+          },
+          {
+            "name": "index_audit_logs_affected_type_affected_record_id",
+            "unique": false,
+            "columnNames": [
+              "affected_type",
+              "affected_record_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_audit_logs_affected_type_affected_record_id` ON `${TABLE_NAME}` (`affected_type`, `affected_record_id`)"
+          },
+          {
+            "name": "index_audit_logs_farm_id_actor_user_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_audit_logs_farm_id_actor_user_id` ON `${TABLE_NAME}` (`farm_id`, `actor_user_id`)"
+          },
+          {
+            "name": "index_audit_logs_farm_id_device_id",
+            "unique": false,
+            "columnNames": [
+              "farm_id",
+              "device_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_audit_logs_farm_id_device_id` ON `${TABLE_NAME}` (`farm_id`, `device_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "farms",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id"
+            ],
+            "referencedColumns": [
+              "farm_id"
+            ]
+          },
+          {
+            "table": "users",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "actor_user_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "user_id"
+            ]
+          },
+          {
+            "table": "devices",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "farm_id",
+              "device_id"
+            ],
+            "referencedColumns": [
+              "farm_id",
+              "device_id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '12b55fe65d26475d1ac94853a73debea')"
+    ]
+  }
+}
