@@ -43,7 +43,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** Persistence and referential-integrity tests only; no business calculations are tested here. */
@@ -297,7 +296,7 @@ public class PoultryTrackDatabaseTest {
         audit.detailsJson = "{\"currency\":\"PHP\"}";
         database.auditLogDao().insert(audit);
         assertEquals("PRICE_CREATED", database.auditLogDao().findById(audit.auditLogId).action);
-        assertTrue(database.auditLogDao().getForFarm(farm.farmId).size() == 1);
+        assertEquals(1, database.auditLogDao().getForFarm(farm.farmId).size());
     }
 
     private PriceVersionEntity price(String id, int version, long amount, long from, Long to) {
