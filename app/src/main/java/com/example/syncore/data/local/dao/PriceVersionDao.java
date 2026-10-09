@@ -23,4 +23,7 @@ public interface PriceVersionDao {
     @Query("SELECT * FROM price_versions WHERE farm_id = :farmId AND product_id = :productId " +
             "ORDER BY version_number DESC")
     List<PriceVersionEntity> getHistory(String farmId, String productId);
+    @Query("SELECT * FROM price_versions WHERE farm_id = :farmId AND product_id = :productId " +
+            "ORDER BY version_number DESC LIMIT 1")
+    PriceVersionEntity getLatest(String farmId, String productId);
 }

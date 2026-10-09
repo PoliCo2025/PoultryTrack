@@ -48,6 +48,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** Persistence and referential-integrity tests only; no business calculations are tested here. */
@@ -333,7 +334,7 @@ public class PoultryTrackDatabaseTest {
         PoultryTrackDatabase migrated = Room.databaseBuilder(
                         ApplicationProvider.getApplicationContext(), PoultryTrackDatabase.class, databaseName)
                 .allowMainThreadQueries()
-                .addMigrations(PoultryTrackDatabase.MIGRATION_1_2)
+                .addMigrations(PoultryTrackDatabase.MIGRATION_1_2, PoultryTrackDatabase.MIGRATION_2_3)
                 .build();
         try {
             assertEquals(1, migrated.inventoryLedgerDao().getHistory(
@@ -383,6 +384,34 @@ public class PoultryTrackDatabaseTest {
             }
         } finally {
             migrated.close();
+        }
+    }
+
+    @Test public void migration2To3AddsOneOpenShiftConstraintWithoutRemovingRows() throws IOException {
+        String databaseName = "poultrytrack-phase-2-shift-migration";
+        SupportSQLiteDatabase versionTwo = migrationTestHelper.createDatabase(databaseName, 2);
+        versionTwo.execSQL("INSERT INTO farms (farm_id, name, location, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('farm-shift-migration', 'Shift Farm', NULL, 1, 100, 100)");
+        versionTwo.execSQL("INSERT INTO users (user_id, farm_id, username, username_normalized, display_name, role, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('user-shift-migration', 'farm-shift-migration', 'staff', 'staff', 'Staff', 'SALES_PERSONNEL', 1, 100, 100)");
+        versionTwo.execSQL("INSERT INTO shifts (shift_id, farm_id, user_id, device_id, started_at_epoch_ms, ended_at_epoch_ms, opening_cash_minor_units, closing_cash_minor_units, expected_cash_minor_units, difference_cash_minor_units, status) " +
+                "VALUES ('shift-migration-open', 'farm-shift-migration', 'user-shift-migration', NULL, 200, NULL, 0, NULL, NULL, NULL, 'OPEN')");
+        versionTwo.close();
+
+        SupportSQLiteDatabase migratedSchema = migrationTestHelper.runMigrationsAndValidate(
+                databaseName, 3, true, PoultryTrackDatabase.MIGRATION_2_3);
+        try {
+            try {
+                migratedSchema.execSQL("INSERT INTO shifts (shift_id, farm_id, user_id, device_id, started_at_epoch_ms, ended_at_epoch_ms, opening_cash_minor_units, closing_cash_minor_units, expected_cash_minor_units, difference_cash_minor_units, status, open_user_id) " +
+                        "VALUES ('shift-migration-open-duplicate', 'farm-shift-migration', 'user-shift-migration', NULL, 300, NULL, 0, NULL, NULL, NULL, 'OPEN', 'user-shift-migration')");
+                fail("Migration must prevent a second open shift for the same farm and user.");
+            } catch (SQLiteConstraintException expected) {
+                // The partial unique index is enforced by SQLite.
+            }
+            android.database.Cursor cursor = migratedSchema.query("SELECT COUNT(*) FROM shifts WHERE status = 'OPEN'");
+            try { assertTrue(cursor.moveToFirst()); assertEquals(1, cursor.getInt(0)); } finally { cursor.close(); }
+        } finally {
+            migratedSchema.close();
         }
     }
 

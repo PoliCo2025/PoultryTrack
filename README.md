@@ -2,7 +2,7 @@
 
 PoultryTrack is an Android UI prototype for recording poultry egg sales and tracking farm inventory. It is designed around a small farm workflow, with quick access to point of sale, harvest entry, stock views, and farm reports.
 
-> **Current status:** The Figma-inspired Android UI and the Phase 1 local Room data foundation are in place. The UI still displays presentation samples and is not connected to the database. Authentication, POS/inventory business workflows, networking, reports, and offline synchronization are not implemented.
+> **Current status:** The Figma-inspired Android UI, Room data foundation, and Phase 2 local business services are in place. The UI still displays presentation samples and is not connected to the database. Authentication, runtime authorization, networking, reports, and offline synchronization are not implemented.
 
 ## Screens
 
@@ -23,9 +23,29 @@ Room database code lives under `app/src/main/java/com/example/syncore/data/local
 
 The current inventory balance is a query over signed ledger entries rather than a second mutable stock value. Money is stored as integer minor units with a currency code. Sale items keep the price and line-total snapshots used at the time of sale. A new database is seeded only with the four reference egg sizes; it does not create demo farms, users, sales, harvests, or other transactions.
 
-The database is at schema version 2. Exported schema files are stored under `app/schemas`; future schema changes should add explicit migrations. The database does not fall back to destructive migration. Migration 1→2 adds product-level inventory event uniqueness and makes normalized usernames unique within a farm.
+The database is at schema version 3. Exported schema files are stored under `app/schemas`; future schema changes should add explicit migrations. The database does not fall back to destructive migration. Migration 1→2 adds product-level inventory event uniqueness and makes normalized usernames unique within a farm. Migration 2→3 adds a unique open-shift slot per farm and user while retaining closed shift history.
 
-Instrumented database tests cover Room persistence, foreign keys, effective price history, immutable sale snapshots, unique receipts, ledger balances, shifts, adjustments, outbox/audit records, atomic sale/harvest writes, multi-product ledger events, farm-scoped usernames, and the 1→2 migration. Run them on a connected Android device or emulator with:
+## Phase 2 business services
+
+Business rules live in `app/src/main/java/com/example/syncore/domain`; they are independent of Activities and are not yet connected to the XML screens.
+
+- `SalesService` checks the active farm/user/open shift, non-empty positive cart quantities, active products, effective prices, and available stock. It calculates totals with integer minor units, snapshots each price, validates cash/change, and writes the completed sale, items, payment, and signed stock movements in one Room transaction. The caller supplies a stable sale ID as the idempotency key.
+- `HarvestService` validates positive quantities and farm/user/device references, then writes the harvest, items, and positive ledger entries atomically. The harvest ID prevents repeat posting.
+- `InventoryAdjustmentService` creates pending requests and permits a single pending-to-approved or pending-to-rejected transition. Approval checks stock and writes the reviewer metadata and ledger movement in one transaction.
+- `PricingService` creates strictly chronological effective-dated price versions, closes the prior open-ended version, and resolves prices by farm, product, and time. Historical sale-item snapshots are not updated.
+- `ShiftService` starts and closes cash sessions and calculates expected cash and variance from completed cash payments. A schema-level unique open-shift slot prevents duplicate active shifts.
+
+Each service uses Room transactions for related writes. The ledger's unique event/source/product key is the final duplicate-movement guard, and stock validation is performed inside the same write transaction as checkout or adjustment approval. Farm ownership is checked for farms, staff, devices, prices, shifts, and transactions; inventory balances are always queried with a farm ID. The current catalog products are global egg-size references, while prices and stock are farm-specific.
+
+Authentication and runtime authorization remain Phase 3 responsibilities. Before calling these services from a future ViewModel/controller, that layer must establish and validate the signed-in user and active farm, enforce role permissions (especially adjustment review and price changes), and prevent callers from supplying another farm's identifiers. These local service checks enforce data consistency; they do not authenticate a person or constitute a security boundary against code running on the device.
+
+Run local unit tests and connected Room/service instrumentation tests with:
+
+```shell
+./gradlew :app:testDebugUnitTest :app:connectedDebugAndroidTest
+```
+
+Instrumented database tests cover Room persistence, foreign keys, effective price history, immutable sale snapshots, unique receipts, ledger balances, shifts, adjustments, outbox/audit records, atomic sale/harvest writes, multi-product ledger events, farm-scoped usernames, and the 1→2 migration. Phase 2 service tests additionally cover validation, rollback, stock isolation, idempotency, approvals, pricing changes, cash reconciliation, and the 2→3 migration. Run them on a connected Android device or emulator with:
 
 ```shell
 ./gradlew :app:connectedDebugAndroidTest
@@ -65,9 +85,9 @@ The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
 The app is branded PoultryTrack, while the Android namespace and application ID still use the earlier `com.example.syncore` identifier. That package cleanup has not been done yet.
 
-## Phase 1 boundaries
+## Scope boundaries
 
-This phase adds persistence structures and storage-only aggregate writes. It does not implement POS calculations, stock posting, harvest inventory updates, adjustment approval behavior, authentication, authorization, network requests, a sync engine, or report calculations. The Android namespace and application ID still use the earlier `com.example.syncore` identifier, and the theme is still named `Theme.Syncore`.
+Phase 2 adds local business calculations and service operations only. It does not connect services to UI screens or implement authentication, runtime role authorization, network requests, a sync engine, or report calculations. The Android namespace and application ID still use the earlier `com.example.syncore` identifier, and the theme is still named `Theme.Syncore`.
 
 ## Phase 1.5 architecture decisions
 

@@ -58,7 +58,7 @@ import com.example.syncore.data.local.entity.UserEntity;
         InventoryLedgerEntity.class,
         SyncOutboxEntity.class,
         AuditLogEntity.class
-}, version = 2, exportSchema = true)
+}, version = 3, exportSchema = true)
 @TypeConverters(DatabaseConverters.class)
 public abstract class PoultryTrackDatabase extends RoomDatabase {
     private static volatile PoultryTrackDatabase instance;
@@ -74,6 +74,16 @@ public abstract class PoultryTrackDatabase extends RoomDatabase {
             database.execSQL("DROP INDEX IF EXISTS `index_users_username_normalized`");
             database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_users_farm_id_username_normalized` " +
                     "ON `users` (`farm_id`, `username_normalized`)");
+        }
+    };
+
+    /** At most one open cash shift per farm and staff member. Existing conflicts fail migration safely. */
+    public static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE `shifts` ADD COLUMN `open_user_id` TEXT");
+            database.execSQL("UPDATE `shifts` SET `open_user_id` = `user_id` WHERE `status` = 'OPEN'");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_shifts_farm_id_open_user_id` " +
+                    "ON `shifts` (`farm_id`, `open_user_id`)");
         }
     };
 
@@ -102,7 +112,7 @@ public abstract class PoultryTrackDatabase extends RoomDatabase {
                     result = Room.databaseBuilder(context.getApplicationContext(),
                                     PoultryTrackDatabase.class, "poultrytrack.db")
                             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                            .addMigrations(MIGRATION_1_2)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                             .addCallback(initialCallback())
                             .build();
                     instance = result;

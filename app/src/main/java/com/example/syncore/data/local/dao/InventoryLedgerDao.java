@@ -23,4 +23,7 @@ public interface InventoryLedgerDao {
             "ON l.product_id = p.product_id AND l.farm_id = :farmId " +
             "WHERE p.is_active = 1 GROUP BY p.product_id, p.name ORDER BY p.sort_order, p.name")
     List<InventoryBalance> getBalances(String farmId);
+    @Query("SELECT COALESCE(SUM(quantity_delta_eggs), 0) FROM inventory_ledger " +
+            "WHERE farm_id = :farmId AND product_id = :productId")
+    long getBalance(String farmId, String productId);
 }

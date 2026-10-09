@@ -24,7 +24,8 @@ import java.util.UUID;
         indices = {
                 @Index(value = {"farm_id", "started_at_epoch_ms"}),
                 @Index(value = {"farm_id", "shift_id"}, unique = true),
-                @Index(value = {"farm_id", "user_id"}), @Index(value = {"farm_id", "device_id"})
+                @Index(value = {"farm_id", "user_id"}), @Index(value = {"farm_id", "device_id"}),
+                @Index(value = {"farm_id", "open_user_id"}, unique = true)
         })
 public class ShiftEntity {
     @PrimaryKey @NonNull @ColumnInfo(name = "shift_id") public String shiftId = UUID.randomUUID().toString();
@@ -38,4 +39,6 @@ public class ShiftEntity {
     @ColumnInfo(name = "expected_cash_minor_units") public Long expectedCashMinorUnits;
     @ColumnInfo(name = "difference_cash_minor_units") public Long differenceCashMinorUnits;
     @NonNull public ShiftStatus status = ShiftStatus.OPEN;
+    /** Mirrors user_id only while OPEN; NULL permits any number of closed shifts under the unique index. */
+    @ColumnInfo(name = "open_user_id") public String openUserId;
 }

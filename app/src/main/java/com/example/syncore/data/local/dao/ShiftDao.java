@@ -16,4 +16,11 @@ public interface ShiftDao {
     @Update int update(ShiftEntity shift);
     @Query("SELECT * FROM shifts WHERE shift_id = :shiftId LIMIT 1") ShiftEntity findById(String shiftId);
     @Query("SELECT * FROM shifts WHERE farm_id = :farmId ORDER BY started_at_epoch_ms DESC") List<ShiftEntity> getForFarm(String farmId);
+    @Query("SELECT * FROM shifts WHERE farm_id = :farmId AND user_id = :userId AND status = 'OPEN' LIMIT 1")
+    ShiftEntity findOpenForUser(String farmId, String userId);
+    @Query("SELECT COALESCE(SUM(p.amount_minor_units), 0) FROM payments p " +
+            "INNER JOIN sales s ON s.sale_id = p.sale_id " +
+            "WHERE s.farm_id = :farmId AND s.shift_id = :shiftId " +
+            "AND s.status = 'COMPLETED' AND p.payment_method = 'CASH' AND p.currency_code = :currencyCode")
+    long getCashPaidForShift(String farmId, String shiftId, String currencyCode);
 }
