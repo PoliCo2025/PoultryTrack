@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -47,6 +48,7 @@ public class BusinessServicesTest {
     private InventoryAdjustmentService adjustments;
     private PricingService pricing;
     private ShiftService shifts;
+    private AtomicLong pricingClock;
 
     @Before public void setUp() {
         db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), PoultryTrackDatabase.class)
@@ -60,7 +62,8 @@ public class BusinessServicesTest {
         user.usernameNormalized = "a"; user.displayName = "User A"; user.role = UserRole.ADMIN; db.userDao().insert(user);
         device = new DeviceEntity(); device.deviceId = "device-a"; device.farmId = farm.farmId; device.deviceName = "Device A"; db.deviceDao().insert(device);
         sales = new SalesService(db); harvests = new HarvestService(db); adjustments = new InventoryAdjustmentService(db);
-        pricing = new PricingService(db); shifts = new ShiftService(db);
+        pricingClock = new AtomicLong(0);
+        pricing = new PricingService(db, pricingClock::get); shifts = new ShiftService(db);
     }
 
     @After public void tearDown() { if (db != null) db.close(); }
@@ -76,7 +79,8 @@ public class BusinessServicesTest {
         assertEquals(17L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
         assertEquals(26L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.MEDIUM_ID));
         assertEquals(2, db.saleItemDao().getForSale(sale.saleId).size());
-        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 500, "PHP", 400, user.userId);
+        pricingClock.set(400);
+        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 500, "PHP", user.userId, "MVP price change");
         SaleItemEntity smallLine = null;
         for (SaleItemEntity line : db.saleItemDao().getForSale(sale.saleId)) {
             if (ProductEntity.SMALL_ID.equals(line.productId)) smallLine = line;
@@ -108,7 +112,8 @@ public class BusinessServicesTest {
 
     @Test public void checkoutRejectsAPriceInAnotherCurrencyWithoutPostingAnything() {
         stock(ProductEntity.SMALL_ID, 10); prices(); ShiftEntity shift = openShift();
-        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 500, "USD", 20, user.userId);
+        pricingClock.set(20);
+        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 500, "USD", user.userId, "MVP price change");
         expectFailure(() -> sales.checkout("wrong-currency", "WRONG-CURRENCY", farm.farmId, user.userId,
                 shift.shiftId, device.deviceId, 30, cart(ProductEntity.SMALL_ID, 1), 500));
         assertNull(db.saleDao().findById("wrong-currency"));
@@ -323,31 +328,62 @@ public class BusinessServicesTest {
     }
 
     @Test public void pricingCreatesEffectiveVersionsAndPreservesHistory() {
-        PriceVersionEntity p1 = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", 100, user.userId);
-        PriceVersionEntity p2 = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 200, user.userId);
+        pricingClock.set(100);
+        PriceVersionEntity p1 = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", user.userId, "MVP price change");
+        pricingClock.set(200);
+        PriceVersionEntity p2 = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", user.userId, "MVP price change");
         assertEquals(100L, p1.effectiveFromEpochMs); assertEquals(Long.valueOf(200), db.priceVersionDao().findById(p1.priceVersionId).effectiveToEpochMs);
         assertEquals(p1.priceVersionId, pricing.resolve(farm.farmId, ProductEntity.SMALL_ID, 150).priceVersionId);
         assertEquals(p2.priceVersionId, pricing.resolve(farm.farmId, ProductEntity.SMALL_ID, 250).priceVersionId);
         assertEquals(2, db.priceVersionDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+        assertEquals(2, db.auditLogDao().getForFarm(farm.farmId).size());
+        assertTrue(db.auditLogDao().getForRecord("PRICE_VERSION", p2.priceVersionId).get(0).detailsJson.contains("MVP price change"));
+    }
+
+    @Test public void priceChangeTakesEffectAtApplicationAssignedTimeAndRequiresReason() {
+        pricingClock.set(1234);
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", user.userId, " "));
+        PriceVersionEntity price = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", user.userId, "Market price updated");
+        assertEquals(1234L, price.effectiveFromEpochMs);
+        assertEquals(price.priceVersionId, pricing.resolve(farm.farmId, ProductEntity.SMALL_ID, 1234).priceVersionId);
+        assertEquals(price.priceVersionId, pricing.resolve(farm.farmId, ProductEntity.SMALL_ID, 1235).priceVersionId);
     }
 
     @Test public void pricingRejectsInvalidAmountNonchronologicalChangeAndCrossFarmUser() {
-        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 0, "PHP", 100, user.userId));
-        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", 100, user.userId);
-        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, -1, "PHP", 200, user.userId));
-        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 90, user.userId));
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 0, "PHP", user.userId, "MVP price change"));
+        pricingClock.set(100);
+        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", user.userId, "MVP price change");
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, -1, "PHP", user.userId, "MVP price change"));
+        pricingClock.set(90);
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", user.userId, "Attempted backdate"));
+        pricingClock.set(100);
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", user.userId, "Attempted same-time change"));
+        assertEquals(1, db.priceVersionDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
         FarmEntity other = new FarmEntity(); other.farmId = "farm-b"; other.name = "Farm B"; db.farmDao().insert(other);
         UserEntity otherUser = new UserEntity(); otherUser.userId = "user-b"; otherUser.farmId = other.farmId; otherUser.username = "b"; otherUser.usernameNormalized = "b"; otherUser.displayName = "B"; db.userDao().insert(otherUser);
-        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 200, otherUser.userId));
+        pricingClock.set(200);
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", otherUser.userId, "MVP price change"));
     }
 
     @Test public void failedPriceInsertRollsBackClosingPreviousPriceVersion() {
-        PriceVersionEntity original = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", 100, user.userId);
+        PriceVersionEntity original = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", user.userId, "MVP price change");
+        pricingClock.set(200);
         abortBeforeInsert("price_versions", "force_price_insert_failure");
-        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 200, user.userId));
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", user.userId, "MVP price change"));
         PriceVersionEntity persisted = db.priceVersionDao().findById(original.priceVersionId);
         assertNull(persisted.effectiveToEpochMs);
         assertEquals(1, db.priceVersionDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+    }
+
+    @Test public void failedPriceAuditInsertRollsBackPriceVersionAndIntervalUpdate() {
+        PriceVersionEntity original = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", user.userId, "Initial price");
+        pricingClock.set(200);
+        abortBeforeInsert("audit_logs", "force_price_audit_failure");
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", user.userId, "Audited change"));
+        PriceVersionEntity persisted = db.priceVersionDao().findById(original.priceVersionId);
+        assertNull(persisted.effectiveToEpochMs);
+        assertEquals(1, db.priceVersionDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+        assertEquals(1, db.auditLogDao().getForFarm(farm.farmId).size());
     }
 
     @Test public void shiftsStartCloseReconcileAndEnforceSingleOpenSession() {
@@ -394,8 +430,8 @@ public class BusinessServicesTest {
     }
 
     private void prices() {
-        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 300, "PHP", 0, user.userId);
-        pricing.setPrice(farm.farmId, ProductEntity.MEDIUM_ID, 1000, "PHP", 0, user.userId);
+        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 300, "PHP", user.userId, "MVP price change");
+        pricing.setPrice(farm.farmId, ProductEntity.MEDIUM_ID, 1000, "PHP", user.userId, "MVP price change");
     }
     private void seedProduct(String id, String name, int order) {
         ProductEntity product = new ProductEntity(); product.productId = id; product.name = name; product.sortOrder = order;
