@@ -58,7 +58,7 @@ import com.example.syncore.data.local.entity.UserEntity;
         InventoryLedgerEntity.class,
         SyncOutboxEntity.class,
         AuditLogEntity.class
-}, version = 3, exportSchema = true)
+}, version = 4, exportSchema = true)
 @TypeConverters(DatabaseConverters.class)
 public abstract class PoultryTrackDatabase extends RoomDatabase {
     private static volatile PoultryTrackDatabase instance;
@@ -87,6 +87,26 @@ public abstract class PoultryTrackDatabase extends RoomDatabase {
         }
     };
 
+    /** Prevents DAO callers from bypassing the open-shift unique slot with a missing or stale marker. */
+    public static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override public void migrate(@NonNull SupportSQLiteDatabase database) {
+            installShiftGuards(database);
+        }
+    };
+
+    private static void installShiftGuards(@NonNull SupportSQLiteDatabase database) {
+        database.execSQL("CREATE TRIGGER IF NOT EXISTS `trigger_shifts_open_slot_insert` " +
+                "BEFORE INSERT ON `shifts` " +
+                "WHEN (`NEW`.`status` = 'OPEN' AND (`NEW`.`open_user_id` IS NULL OR `NEW`.`open_user_id` != `NEW`.`user_id`)) " +
+                "OR (`NEW`.`status` != 'OPEN' AND `NEW`.`open_user_id` IS NOT NULL) " +
+                "BEGIN SELECT RAISE(ABORT, 'shift open-slot marker does not match status and user'); END");
+        database.execSQL("CREATE TRIGGER IF NOT EXISTS `trigger_shifts_open_slot_update` " +
+                "BEFORE UPDATE OF `status`, `user_id`, `farm_id`, `open_user_id` ON `shifts` " +
+                "WHEN (`NEW`.`status` = 'OPEN' AND (`NEW`.`open_user_id` IS NULL OR `NEW`.`open_user_id` != `NEW`.`user_id`)) " +
+                "OR (`NEW`.`status` != 'OPEN' AND `NEW`.`open_user_id` IS NOT NULL) " +
+                "BEGIN SELECT RAISE(ABORT, 'shift open-slot marker does not match status and user'); END");
+    }
+
     public abstract FarmDao farmDao();
     public abstract DeviceDao deviceDao();
     public abstract UserDao userDao();
@@ -112,7 +132,7 @@ public abstract class PoultryTrackDatabase extends RoomDatabase {
                     result = Room.databaseBuilder(context.getApplicationContext(),
                                     PoultryTrackDatabase.class, "poultrytrack.db")
                             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                             .addCallback(initialCallback())
                             .build();
                     instance = result;
@@ -127,6 +147,7 @@ public abstract class PoultryTrackDatabase extends RoomDatabase {
             @Override public void onCreate(@NonNull SupportSQLiteDatabase database) {
                 super.onCreate(database);
                 DefaultEggCatalog.seed(database);
+                installShiftGuards(database);
             }
         };
     }

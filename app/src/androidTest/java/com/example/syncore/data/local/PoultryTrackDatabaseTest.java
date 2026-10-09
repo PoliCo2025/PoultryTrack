@@ -334,7 +334,8 @@ public class PoultryTrackDatabaseTest {
         PoultryTrackDatabase migrated = Room.databaseBuilder(
                         ApplicationProvider.getApplicationContext(), PoultryTrackDatabase.class, databaseName)
                 .allowMainThreadQueries()
-                .addMigrations(PoultryTrackDatabase.MIGRATION_1_2, PoultryTrackDatabase.MIGRATION_2_3)
+                .addMigrations(PoultryTrackDatabase.MIGRATION_1_2, PoultryTrackDatabase.MIGRATION_2_3,
+                        PoultryTrackDatabase.MIGRATION_3_4)
                 .build();
         try {
             assertEquals(1, migrated.inventoryLedgerDao().getHistory(
@@ -406,7 +407,7 @@ public class PoultryTrackDatabaseTest {
                         "VALUES ('shift-migration-open-duplicate', 'farm-shift-migration', 'user-shift-migration', NULL, 300, NULL, 0, NULL, NULL, NULL, 'OPEN', 'user-shift-migration')");
                 fail("Migration must prevent a second open shift for the same farm and user.");
             } catch (SQLiteConstraintException expected) {
-                // The partial unique index is enforced by SQLite.
+                // The unique open-slot index is enforced by SQLite.
             }
             android.database.Cursor cursor = migratedSchema.query("SELECT COUNT(*) FROM shifts WHERE status = 'OPEN'");
             try { assertTrue(cursor.moveToFirst()); assertEquals(1, cursor.getInt(0)); } finally { cursor.close(); }
@@ -415,9 +416,45 @@ public class PoultryTrackDatabaseTest {
         }
     }
 
+    @Test public void migration3To4PreservesShiftsAndPreventsOpenSlotMarkerBypass() throws IOException {
+        String databaseName = "poultrytrack-phase-2-5-shift-guards";
+        SupportSQLiteDatabase versionThree = migrationTestHelper.createDatabase(databaseName, 3);
+        versionThree.execSQL("INSERT INTO farms (farm_id, name, location, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('farm-shift-guard', 'Guard Farm', NULL, 1, 100, 100)");
+        versionThree.execSQL("INSERT INTO users (user_id, farm_id, username, username_normalized, display_name, role, is_active, created_at_epoch_ms, updated_at_epoch_ms) " +
+                "VALUES ('user-shift-guard', 'farm-shift-guard', 'staff', 'staff', 'Staff', 'SALES_PERSONNEL', 1, 100, 100)");
+        versionThree.execSQL("INSERT INTO shifts (shift_id, farm_id, user_id, device_id, started_at_epoch_ms, ended_at_epoch_ms, opening_cash_minor_units, closing_cash_minor_units, expected_cash_minor_units, difference_cash_minor_units, status, open_user_id) " +
+                "VALUES ('shift-preserved', 'farm-shift-guard', 'user-shift-guard', NULL, 200, NULL, 0, NULL, NULL, NULL, 'OPEN', 'user-shift-guard')");
+        versionThree.close();
+
+        SupportSQLiteDatabase migrated = migrationTestHelper.runMigrationsAndValidate(
+                databaseName, 4, true, PoultryTrackDatabase.MIGRATION_3_4);
+        try {
+            android.database.Cursor cursor = migrated.query("SELECT COUNT(*) FROM shifts WHERE status = 'OPEN'");
+            try { assertTrue(cursor.moveToFirst()); assertEquals(1, cursor.getInt(0)); } finally { cursor.close(); }
+            try {
+                migrated.execSQL("INSERT INTO shifts (shift_id, farm_id, user_id, device_id, started_at_epoch_ms, ended_at_epoch_ms, opening_cash_minor_units, closing_cash_minor_units, expected_cash_minor_units, difference_cash_minor_units, status, open_user_id) " +
+                        "VALUES ('shift-marker-bypass', 'farm-shift-guard', 'user-shift-guard', NULL, 300, NULL, 0, NULL, NULL, NULL, 'OPEN', NULL)");
+                fail("The migration must reject an open shift without its unique-slot marker.");
+            } catch (SQLiteConstraintException expected) {
+                // Trigger protects direct SQL/DAO writes that omit the marker.
+            }
+            try {
+                migrated.execSQL("INSERT INTO shifts (shift_id, farm_id, user_id, device_id, started_at_epoch_ms, ended_at_epoch_ms, opening_cash_minor_units, closing_cash_minor_units, expected_cash_minor_units, difference_cash_minor_units, status, open_user_id) " +
+                        "VALUES ('shift-duplicate', 'farm-shift-guard', 'user-shift-guard', NULL, 300, NULL, 0, NULL, NULL, NULL, 'OPEN', 'user-shift-guard')");
+                fail("The migrated database must retain the unique open-shift constraint.");
+            } catch (SQLiteConstraintException expected) {
+                // Unique index still protects duplicate active slots.
+            }
+        } finally {
+            migrated.close();
+        }
+    }
+
     @Test public void shiftsAndAdjustmentRequestsPersistTheirStatusesAndActors() {
         ShiftEntity shift = newShift("shift-test");
         shift.status = ShiftStatus.CLOSED;
+        shift.openUserId = null;
         shift.endedAtEpochMs = 800L;
         shift.closingCashMinorUnits = 50000L;
         shift.expectedCashMinorUnits = 49000L;
@@ -491,6 +528,7 @@ public class PoultryTrackDatabaseTest {
         shift.deviceId = device.deviceId;
         shift.startedAtEpochMs = 200;
         shift.openingCashMinorUnits = 10000;
+        shift.openUserId = user.userId;
         return shift;
     }
 

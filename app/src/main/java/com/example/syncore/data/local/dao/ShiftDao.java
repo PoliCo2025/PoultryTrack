@@ -23,4 +23,6 @@ public interface ShiftDao {
             "WHERE s.farm_id = :farmId AND s.shift_id = :shiftId " +
             "AND s.status = 'COMPLETED' AND p.payment_method = 'CASH' AND p.currency_code = :currencyCode")
     long getCashPaidForShift(String farmId, String shiftId, String currencyCode);
+    @Query("SELECT MAX(sold_at_epoch_ms) FROM sales WHERE farm_id = :farmId AND shift_id = :shiftId AND status = 'COMPLETED'")
+    Long getLatestCompletedSaleTime(String farmId, String shiftId);
 }

@@ -13,7 +13,6 @@ import com.example.syncore.data.local.entity.ShiftEntity;
 import com.example.syncore.data.local.entity.DatabaseEnums.ShiftStatus;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,7 +38,8 @@ public final class SalesService {
             ShiftEntity shift = db.shiftDao().findById(shiftId);
             if (shift == null || !farmId.equals(shift.farmId) || !actorUserId.equals(shift.userId) || shift.status != ShiftStatus.OPEN)
                 throw new IllegalArgumentException("An open shift belonging to this farm and user is required.");
-            if (shift.deviceId != null && deviceId != null && !shift.deviceId.equals(deviceId)) throw new IllegalArgumentException("Sale device does not match the active shift.");
+            if (soldAtEpochMs < shift.startedAtEpochMs) throw new IllegalArgumentException("Sale time precedes the active shift.");
+            if (shift.deviceId != null && !shift.deviceId.equals(deviceId)) throw new IllegalArgumentException("Sale device does not match the active shift.");
             List<SaleItemEntity> items = new ArrayList<>();
             List<InventoryLedgerEntity> movements = new ArrayList<>();
             long total = 0;
@@ -49,6 +49,7 @@ public final class SalesService {
                 ProductEntity product = BusinessRules.product(db, productId);
                 PriceVersionEntity price = db.priceVersionDao().findEffectiveAt(farmId, productId, soldAtEpochMs);
                 if (price == null || !farmId.equals(price.farmId) || !productId.equals(price.productId)) throw new IllegalStateException("No applicable price exists for " + product.name + ".");
+                if (!DEFAULT_CURRENCY.equals(price.currencyCode)) throw new IllegalStateException("Price currency does not match the supported sale currency.");
                 long stock = db.inventoryLedgerDao().getBalance(farmId, productId);
                 if (stock < quantityValue) throw new IllegalStateException("Insufficient stock for " + product.name + ".");
                 long line = Math.multiplyExact(price.amountMinorUnits, quantityValue.longValue());

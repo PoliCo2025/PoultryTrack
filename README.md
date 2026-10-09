@@ -4,6 +4,8 @@ PoultryTrack is an Android UI prototype for recording poultry egg sales and trac
 
 > **Current status:** The Figma-inspired Android UI, Room data foundation, and Phase 2 local business services are in place. The UI still displays presentation samples and is not connected to the database. Authentication, runtime authorization, networking, reports, and offline synchronization are not implemented.
 
+> **Not production-ready:** Do not use the current app or local services to process real farm transactions. Authentication and role-based authorization are not implemented, the UI is not connected to these services, and local validation does not establish a trusted user or device.
+
 ## Screens
 
 - Login
@@ -23,13 +25,13 @@ Room database code lives under `app/src/main/java/com/example/syncore/data/local
 
 The current inventory balance is a query over signed ledger entries rather than a second mutable stock value. Money is stored as integer minor units with a currency code. Sale items keep the price and line-total snapshots used at the time of sale. A new database is seeded only with the four reference egg sizes; it does not create demo farms, users, sales, harvests, or other transactions.
 
-The database is at schema version 3. Exported schema files are stored under `app/schemas`; future schema changes should add explicit migrations. The database does not fall back to destructive migration. Migration 1→2 adds product-level inventory event uniqueness and makes normalized usernames unique within a farm. Migration 2→3 adds a unique open-shift slot per farm and user while retaining closed shift history.
+The database is at schema version 4. Exported schema files are stored under `app/schemas`; future schema changes should add explicit migrations. The database does not fall back to destructive migration. Migration 1→2 adds product-level inventory event uniqueness and makes normalized usernames unique within a farm. Migration 2→3 adds a unique open-shift slot per farm and user while retaining closed shift history. Migration 3→4 prevents DAO inserts or updates from bypassing that constraint with a missing or stale open-shift marker.
 
 ## Phase 2 business services
 
 Business rules live in `app/src/main/java/com/example/syncore/domain`; they are independent of Activities and are not yet connected to the XML screens.
 
-- `SalesService` checks the active farm/user/open shift, non-empty positive cart quantities, active products, effective prices, and available stock. It calculates totals with integer minor units, snapshots each price, validates cash/change, and writes the completed sale, items, payment, and signed stock movements in one Room transaction. The caller supplies a stable sale ID as the idempotency key.
+- `SalesService` checks the active farm/user/open shift, non-empty positive cart quantities, active products, effective prices, and available stock. Checkout and shift reconciliation currently support PHP cash only, and checkout rejects a price version in another currency. It calculates totals with integer minor units, snapshots each price, validates cash/change, and writes the completed sale, items, payment, and signed stock movements in one Room transaction. The caller supplies a stable sale ID as the idempotency key and must reuse that same ID on retries; harvest and adjustment request IDs follow the same caller-supplied pattern.
 - `HarvestService` validates positive quantities and farm/user/device references, then writes the harvest, items, and positive ledger entries atomically. The harvest ID prevents repeat posting.
 - `InventoryAdjustmentService` creates pending requests and permits a single pending-to-approved or pending-to-rejected transition. Approval checks stock and writes the reviewer metadata and ledger movement in one transaction.
 - `PricingService` creates strictly chronological effective-dated price versions, closes the prior open-ended version, and resolves prices by farm, product, and time. Historical sale-item snapshots are not updated.
@@ -37,7 +39,9 @@ Business rules live in `app/src/main/java/com/example/syncore/domain`; they are 
 
 Each service uses Room transactions for related writes. The ledger's unique event/source/product key is the final duplicate-movement guard, and stock validation is performed inside the same write transaction as checkout or adjustment approval. Farm ownership is checked for farms, staff, devices, prices, shifts, and transactions; inventory balances are always queried with a farm ID. The current catalog products are global egg-size references, while prices and stock are farm-specific.
 
-Authentication and runtime authorization remain Phase 3 responsibilities. Before calling these services from a future ViewModel/controller, that layer must establish and validate the signed-in user and active farm, enforce role permissions (especially adjustment review and price changes), and prevent callers from supplying another farm's identifiers. These local service checks enforce data consistency; they do not authenticate a person or constitute a security boundary against code running on the device.
+Pricing changes must be later than the latest version for that farm/product, but Phase 2 does not forbid an effective time in the past relative to the device clock. A product decision is still needed on whether backdated price changes should be permitted. Existing sale-item price and total snapshots are retained regardless.
+
+Authentication and runtime authorization remain future responsibilities. Before calling these services from a future ViewModel/controller, that layer must establish and validate the signed-in user and active farm, enforce role permissions for price changes, adjustment approvals, user management, and shift administration, and prevent callers from supplying another farm's identifiers. These local service checks enforce data consistency; they do not authenticate a person or constitute a security boundary against code running on the device.
 
 Run local unit tests and connected Room/service instrumentation tests with:
 

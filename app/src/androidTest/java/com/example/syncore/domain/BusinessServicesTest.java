@@ -8,7 +8,6 @@ import com.example.syncore.data.local.PoultryTrackDatabase;
 import com.example.syncore.data.local.entity.AdjustmentRequestEntity;
 import com.example.syncore.data.local.entity.DatabaseEnums.AdjustmentStatus;
 import com.example.syncore.data.local.entity.DatabaseEnums.InventoryEventType;
-import com.example.syncore.data.local.entity.DatabaseEnums.PriceStatus;
 import com.example.syncore.data.local.entity.DatabaseEnums.SaleStatus;
 import com.example.syncore.data.local.entity.DeviceEntity;
 import com.example.syncore.data.local.entity.FarmEntity;
@@ -27,10 +26,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -75,6 +76,7 @@ public class BusinessServicesTest {
         assertEquals(17L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
         assertEquals(26L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.MEDIUM_ID));
         assertEquals(2, db.saleItemDao().getForSale(sale.saleId).size());
+        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 500, "PHP", 400, user.userId);
         SaleItemEntity smallLine = null;
         for (SaleItemEntity line : db.saleItemDao().getForSale(sale.saleId)) {
             if (ProductEntity.SMALL_ID.equals(line.productId)) smallLine = line;
@@ -104,6 +106,16 @@ public class BusinessServicesTest {
         assertNull(db.saleDao().findById("s"));
     }
 
+    @Test public void checkoutRejectsAPriceInAnotherCurrencyWithoutPostingAnything() {
+        stock(ProductEntity.SMALL_ID, 10); prices(); ShiftEntity shift = openShift();
+        pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 500, "USD", 20, user.userId);
+        expectFailure(() -> sales.checkout("wrong-currency", "WRONG-CURRENCY", farm.farmId, user.userId,
+                shift.shiftId, device.deviceId, 30, cart(ProductEntity.SMALL_ID, 1), 500));
+        assertNull(db.saleDao().findById("wrong-currency"));
+        assertTrue(db.paymentDao().getForSale("wrong-currency").isEmpty());
+        assertEquals(10L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+    }
+
     @Test public void rejectsInsufficientCashAndRollsBackAllSaleRows() {
         stock(ProductEntity.SMALL_ID, 10); prices(); ShiftEntity shift = openShift();
         expectFailure(() -> sales.checkout("cash", "RC", farm.farmId, user.userId, shift.shiftId, device.deviceId, 300, cart(ProductEntity.SMALL_ID, 2), 199));
@@ -120,12 +132,82 @@ public class BusinessServicesTest {
         assertEquals(2, db.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
     }
 
+    @Test public void concurrentSalesCannotSellMoreThanTheLastAvailableEgg() throws Exception {
+        stock(ProductEntity.SMALL_ID, 1); prices(); ShiftEntity shift = openShift();
+        int successes = runConcurrently(
+                () -> sales.checkout("last-a", "LAST-A", farm.farmId, user.userId, shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300),
+                () -> sales.checkout("last-b", "LAST-B", farm.farmId, user.userId, shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        assertEquals(1, successes);
+        assertEquals(0L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+        assertEquals(1, db.saleDao().getForFarm(farm.farmId).size());
+        assertEquals(2, db.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+    }
+
+    @Test public void concurrentRetriesOfSameSaleIdCreateOnlyOneSaleAndMovement() throws Exception {
+        stock(ProductEntity.SMALL_ID, 5); prices(); ShiftEntity shift = openShift();
+        int successes = runConcurrently(
+                () -> sales.checkout("same-id", "SAME-A", farm.farmId, user.userId, shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300),
+                () -> sales.checkout("same-id", "SAME-B", farm.farmId, user.userId, shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        assertEquals(1, successes);
+        assertEquals(1, db.saleDao().getForFarm(farm.farmId).size());
+        assertEquals(4L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+        assertEquals(2, db.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+    }
+
+    @Test public void concurrentSaleAndNegativeAdjustmentCannotOverdrawSameProduct() throws Exception {
+        stock(ProductEntity.SMALL_ID, 1); prices(); ShiftEntity shift = openShift();
+        adjustments.request("race-adjustment", farm.farmId, user.userId, ProductEntity.SMALL_ID, device.deviceId, -1, "Count correction", 11);
+        int successes = runConcurrently(
+                () -> sales.checkout("race-sale", "RACE-SALE", farm.farmId, user.userId, shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300),
+                () -> adjustments.approve(farm.farmId, "race-adjustment", user.userId, 12));
+        assertEquals(1, successes);
+        assertEquals(0L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+        int saleCount = db.saleDao().getForFarm(farm.farmId).size();
+        boolean adjustmentApplied = db.adjustmentRequestDao().findById("race-adjustment").status == AdjustmentStatus.APPROVED;
+        assertEquals(1, saleCount + (adjustmentApplied ? 1 : 0));
+    }
+
+    @Test public void concurrentCheckoutAndShiftCloseSerializeWithoutLosingSaleCash() throws Exception {
+        stock(ProductEntity.SMALL_ID, 1); prices(); ShiftEntity shift = openShift();
+        runConcurrently(
+                () -> sales.checkout("closing-race-sale", "CLOSE-RACE", farm.farmId, user.userId,
+                        shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300),
+                () -> shifts.close(farm.farmId, shift.shiftId, user.userId, 5300, 20, "PHP"));
+        ShiftEntity closed = db.shiftDao().findById(shift.shiftId);
+        assertEquals("CLOSED", closed.status.name());
+        if (db.saleDao().findById("closing-race-sale") != null) {
+            assertEquals(5300L, closed.expectedCashMinorUnits.longValue());
+            assertEquals(0L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+        } else {
+            assertEquals(5000L, closed.expectedCashMinorUnits.longValue());
+            assertEquals(1L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+        }
+    }
+
     @Test public void saleRejectsCrossFarmActorOrShiftAndFarmInventoryIsIsolated() {
         stock(ProductEntity.SMALL_ID, 10); prices(); ShiftEntity shift = openShift();
         FarmEntity other = new FarmEntity(); other.farmId = "farm-b"; other.name = "Farm B"; db.farmDao().insert(other);
         UserEntity otherUser = new UserEntity(); otherUser.userId = "user-b"; otherUser.farmId = other.farmId; otherUser.username = "b"; otherUser.usernameNormalized = "b"; otherUser.displayName = "B"; db.userDao().insert(otherUser);
         expectFailure(() -> sales.checkout("cross", "RX", farm.farmId, otherUser.userId, shift.shiftId, device.deviceId, 300, cart(ProductEntity.SMALL_ID, 1), 100));
         assertEquals(0, db.inventoryLedgerDao().getBalance(other.farmId, ProductEntity.SMALL_ID));
+    }
+
+    @Test public void farmBPriceShiftAndStockCannotBeUsedByFarmASale() {
+        stock(ProductEntity.SMALL_ID, 10); prices(); openShift();
+        FarmEntity farmB = new FarmEntity(); farmB.farmId = "farm-b"; farmB.name = "Farm B"; db.farmDao().insert(farmB);
+        UserEntity userB = new UserEntity(); userB.userId = "user-b"; userB.farmId = farmB.farmId;
+        userB.username = "b"; userB.usernameNormalized = "b"; userB.displayName = "User B"; db.userDao().insert(userB);
+        ShiftEntity shiftB = shifts.start(farmB.farmId, userB.userId, null, 0, 10);
+        harvests.record("farm-b-stock", farmB.farmId, userB.userId, null, 10, cart(ProductEntity.SMALL_ID, 50), "");
+        assertNull(pricing.resolve(farmB.farmId, ProductEntity.SMALL_ID, 20));
+        expectFailure(() -> sales.checkout("farm-cross-sale", "FARM-CROSS", farm.farmId, user.userId,
+                shiftB.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        expectFailure(() -> sales.checkout("farm-no-price", "NO-PRICE", farmB.farmId, userB.userId,
+                shiftB.shiftId, null, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        assertNull(db.saleDao().findById("farm-cross-sale"));
+        assertNull(db.saleDao().findById("farm-no-price"));
+        assertEquals(10L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+        assertEquals(50L, db.inventoryLedgerDao().getBalance(farmB.farmId, ProductEntity.SMALL_ID));
     }
 
     @Test public void saleRollsBackHeaderItemsAndPaymentIfLedgerUniquenessFails() {
@@ -142,6 +224,27 @@ public class BusinessServicesTest {
         assertTrue(db.saleItemDao().getForSale("rollback-sale").isEmpty());
         assertTrue(db.paymentDao().getForSale("rollback-sale").isEmpty());
         assertEquals(2, db.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+    }
+
+    @Test public void failedSaleItemInsertRollsBackSaleHeader() {
+        stock(ProductEntity.SMALL_ID, 5); prices(); ShiftEntity shift = openShift();
+        abortBeforeInsert("sale_items", "force_sale_item_failure");
+        expectFailure(() -> sales.checkout("item-failure", "ITEM-FAIL", farm.farmId, user.userId,
+                shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        assertNull(db.saleDao().findById("item-failure"));
+        assertTrue(db.saleItemDao().getForSale("item-failure").isEmpty());
+        assertEquals(5L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+    }
+
+    @Test public void failedPaymentInsertRollsBackSaleAndItems() {
+        stock(ProductEntity.SMALL_ID, 5); prices(); ShiftEntity shift = openShift();
+        abortBeforeInsert("payments", "force_payment_failure");
+        expectFailure(() -> sales.checkout("payment-failure", "PAY-FAIL", farm.farmId, user.userId,
+                shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        assertNull(db.saleDao().findById("payment-failure"));
+        assertTrue(db.saleItemDao().getForSale("payment-failure").isEmpty());
+        assertTrue(db.paymentDao().getForSale("payment-failure").isEmpty());
+        assertEquals(5L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
     }
 
     @Test public void harvestPostsMultipleProductsAndRejectsEmptyNonpositiveOrDuplicate() {
@@ -163,6 +266,15 @@ public class BusinessServicesTest {
         expectFailure(() -> harvests.record("collision", farm.farmId, user.userId, device.deviceId, 100, cart(ProductEntity.SMALL_ID, 5), ""));
         assertNull(db.harvestDao().findById("collision"));
         assertEquals(1, db.inventoryLedgerDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+    }
+
+    @Test public void failedHarvestItemInsertRollsBackHarvestHeader() {
+        abortBeforeInsert("harvest_items", "force_harvest_item_failure");
+        expectFailure(() -> harvests.record("harvest-item-failure", farm.farmId, user.userId, device.deviceId,
+                100, cart(ProductEntity.SMALL_ID, 5), ""));
+        assertNull(db.harvestDao().findById("harvest-item-failure"));
+        assertTrue(db.harvestItemDao().getForHarvest("harvest-item-failure").isEmpty());
+        assertEquals(0L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
     }
 
     @Test public void harvestRejectsCrossFarmUserAndDoesNotChangeOtherFarmInventory() {
@@ -197,6 +309,19 @@ public class BusinessServicesTest {
         assertEquals(AdjustmentStatus.PENDING, db.adjustmentRequestDao().findById("adj").status);
     }
 
+    @Test public void failedAdjustmentLedgerInsertKeepsRequestPendingAndStockUnchanged() {
+        stock(ProductEntity.SMALL_ID, 10);
+        adjustments.request("adjustment-failure", farm.farmId, user.userId, ProductEntity.SMALL_ID,
+                device.deviceId, -2, "Correction", 10);
+        InventoryLedgerEntity duplicate = new InventoryLedgerEntity(); duplicate.farmId = farm.farmId;
+        duplicate.productId = ProductEntity.SMALL_ID; duplicate.quantityDeltaEggs = 0;
+        duplicate.eventType = InventoryEventType.APPROVED_ADJUSTMENT; duplicate.sourceType = "ADJUSTMENT";
+        duplicate.sourceRecordId = "adjustment-failure"; db.inventoryLedgerDao().insert(duplicate);
+        expectFailure(() -> adjustments.approve(farm.farmId, "adjustment-failure", user.userId, 11));
+        assertEquals(AdjustmentStatus.PENDING, db.adjustmentRequestDao().findById("adjustment-failure").status);
+        assertEquals(10L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+    }
+
     @Test public void pricingCreatesEffectiveVersionsAndPreservesHistory() {
         PriceVersionEntity p1 = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", 100, user.userId);
         PriceVersionEntity p2 = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 200, user.userId);
@@ -216,11 +341,22 @@ public class BusinessServicesTest {
         expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 200, otherUser.userId));
     }
 
+    @Test public void failedPriceInsertRollsBackClosingPreviousPriceVersion() {
+        PriceVersionEntity original = pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 600, "PHP", 100, user.userId);
+        abortBeforeInsert("price_versions", "force_price_insert_failure");
+        expectFailure(() -> pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 700, "PHP", 200, user.userId));
+        PriceVersionEntity persisted = db.priceVersionDao().findById(original.priceVersionId);
+        assertNull(persisted.effectiveToEpochMs);
+        assertEquals(1, db.priceVersionDao().getHistory(farm.farmId, ProductEntity.SMALL_ID).size());
+    }
+
     @Test public void shiftsStartCloseReconcileAndEnforceSingleOpenSession() {
         ShiftEntity shift = shifts.start(farm.farmId, user.userId, device.deviceId, 5000, 10);
         expectFailure(() -> shifts.start(farm.farmId, user.userId, device.deviceId, 0, 11));
         stock(ProductEntity.SMALL_ID, 10); prices();
         sales.checkout("shift-sale", "SHIFT-R", farm.farmId, user.userId, shift.shiftId, device.deviceId, 20, cart(ProductEntity.SMALL_ID, 2), 2000);
+        expectFailure(() -> shifts.close(farm.farmId, shift.shiftId, user.userId, 5600, 15, "PHP"));
+        assertEquals("OPEN", db.shiftDao().findById(shift.shiftId).status.name());
         ShiftEntity closed = shifts.close(farm.farmId, shift.shiftId, user.userId, 5600, 30, "PHP");
         assertEquals(5600L, closed.expectedCashMinorUnits.longValue()); assertEquals(0L, closed.differenceCashMinorUnits.longValue());
         expectFailure(() -> shifts.close(farm.farmId, shift.shiftId, user.userId, 5600, 31, "PHP"));
@@ -234,6 +370,29 @@ public class BusinessServicesTest {
         assertEquals("OPEN", db.shiftDao().findById(shift.shiftId).status.name());
     }
 
+    @Test public void checkoutMustMatchShiftStartTimeFarmAndBoundDevice() {
+        stock(ProductEntity.SMALL_ID, 5); prices(); ShiftEntity shift = openShift();
+        expectFailure(() -> sales.checkout("before-shift", "BEFORE", farm.farmId, user.userId, shift.shiftId, device.deviceId, 9, cart(ProductEntity.SMALL_ID, 1), 300));
+        expectFailure(() -> sales.checkout("wrong-device", "DEVICE", farm.farmId, user.userId, shift.shiftId, null, 20, cart(ProductEntity.SMALL_ID, 1), 300));
+        assertTrue(db.saleDao().getForFarm(farm.farmId).isEmpty());
+        assertEquals(5L, db.inventoryLedgerDao().getBalance(farm.farmId, ProductEntity.SMALL_ID));
+    }
+
+    @Test public void shiftCloseRejectsUnsupportedCurrencyWithoutChangingOpenShift() {
+        ShiftEntity shift = openShift();
+        expectFailure(() -> shifts.close(farm.farmId, shift.shiftId, user.userId, 0, 30, "USD"));
+        assertEquals("OPEN", db.shiftDao().findById(shift.shiftId).status.name());
+        assertNull(db.shiftDao().findById(shift.shiftId).endedAtEpochMs);
+    }
+
+    @Test public void failedShiftCloseUpdateLeavesShiftOpenWithoutPartialReconciliation() {
+        ShiftEntity shift = openShift(); abortBeforeUpdate("shifts", "force_shift_update_failure");
+        expectFailure(() -> shifts.close(farm.farmId, shift.shiftId, user.userId, 200, 30, "PHP"));
+        ShiftEntity persisted = db.shiftDao().findById(shift.shiftId);
+        assertEquals("OPEN", persisted.status.name()); assertNull(persisted.endedAtEpochMs);
+        assertNull(persisted.closingCashMinorUnits); assertNull(persisted.expectedCashMinorUnits);
+    }
+
     private void prices() {
         pricing.setPrice(farm.farmId, ProductEntity.SMALL_ID, 300, "PHP", 0, user.userId);
         pricing.setPrice(farm.farmId, ProductEntity.MEDIUM_ID, 1000, "PHP", 0, user.userId);
@@ -241,6 +400,33 @@ public class BusinessServicesTest {
     private void seedProduct(String id, String name, int order) {
         ProductEntity product = new ProductEntity(); product.productId = id; product.name = name; product.sortOrder = order;
         db.productDao().insert(product);
+    }
+    private void abortBeforeInsert(String table, String triggerName) {
+        db.getOpenHelper().getWritableDatabase().execSQL("CREATE TRIGGER " + triggerName + " BEFORE INSERT ON " + table +
+                " BEGIN SELECT RAISE(ABORT, 'forced test failure'); END");
+    }
+    private void abortBeforeUpdate(String table, String triggerName) {
+        db.getOpenHelper().getWritableDatabase().execSQL("CREATE TRIGGER " + triggerName + " BEFORE UPDATE ON " + table +
+                " BEGIN SELECT RAISE(ABORT, 'forced test failure'); END");
+    }
+    private static int runConcurrently(Runnable first, Runnable second) throws InterruptedException {
+        CountDownLatch ready = new CountDownLatch(2); CountDownLatch start = new CountDownLatch(1); CountDownLatch done = new CountDownLatch(2);
+        AtomicInteger successes = new AtomicInteger();
+        Runnable wrapFirst = () -> runAfterBarrier(first, ready, start, done, successes);
+        Runnable wrapSecond = () -> runAfterBarrier(second, ready, start, done, successes);
+        Thread a = new Thread(wrapFirst, "poultrytrack-race-a"); Thread b = new Thread(wrapSecond, "poultrytrack-race-b");
+        a.start(); b.start();
+        if (!ready.await(5, TimeUnit.SECONDS)) throw new AssertionError("Concurrent calls did not reach the start barrier.");
+        start.countDown();
+        if (!done.await(15, TimeUnit.SECONDS)) throw new AssertionError("Concurrent service calls did not finish.");
+        return successes.get();
+    }
+    private static void runAfterBarrier(Runnable action, CountDownLatch ready, CountDownLatch start,
+                                        CountDownLatch done, AtomicInteger successes) {
+        ready.countDown();
+        try { if (!start.await(5, TimeUnit.SECONDS)) throw new AssertionError("Race barrier timed out."); action.run(); successes.incrementAndGet(); }
+        catch (Throwable expectedFailure) { /* A rejected racing operation must not corrupt committed data. */ }
+        finally { done.countDown(); }
     }
     private void stock(String productId, int count) { harvests.record("stock-" + productId + "-" + db.inventoryLedgerDao().getBalance(farm.farmId, productId), farm.farmId, user.userId, device.deviceId, 1, cart(productId, count), "opening stock fixture"); }
     private ShiftEntity openShift() { return shifts.start(farm.farmId, user.userId, device.deviceId, 5000, 10); }
