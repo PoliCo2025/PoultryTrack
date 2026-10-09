@@ -18,6 +18,8 @@ public interface ShiftDao {
     @Query("SELECT * FROM shifts WHERE farm_id = :farmId ORDER BY started_at_epoch_ms DESC") List<ShiftEntity> getForFarm(String farmId);
     @Query("SELECT * FROM shifts WHERE farm_id = :farmId AND user_id = :userId AND status = 'OPEN' LIMIT 1")
     ShiftEntity findOpenForUser(String farmId, String userId);
+    @Query("SELECT * FROM shifts WHERE status = 'OPEN' ORDER BY started_at_epoch_ms DESC")
+    List<ShiftEntity> getAllOpenShifts();
     @Query("SELECT COALESCE(SUM(p.amount_minor_units), 0) FROM payments p " +
             "INNER JOIN sales s ON s.sale_id = p.sale_id " +
             "WHERE s.farm_id = :farmId AND s.shift_id = :shiftId " +

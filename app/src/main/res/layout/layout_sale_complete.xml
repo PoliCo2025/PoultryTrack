@@ -1,17 +1,51 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/off_white" android:orientation="vertical">
- <include layout="@layout/pt_header" />
- <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
-  <LinearLayout android:id="@+id/page_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="18dp" android:paddingEnd="18dp" android:paddingBottom="12dp">
-   
-   <TextView android:layout_width="58dp" android:layout_height="58dp" android:layout_gravity="center_horizontal" android:layout_marginTop="18dp" android:background="@drawable/role_chip" android:gravity="center" android:text="✓" android:textColor="@color/farm_green" android:textSize="30sp" />
-   <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp" android:text="₱660.00 received" android:textColor="@color/muted_gray_green" android:textSize="21sp" android:textStyle="bold" />
-   <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp" android:text="Cash sale · 8 Oct 2026, 10:42 AM\nFinalized · Pending sync" android:textColor="@color/muted_gray_green" android:textSize="11sp" />
-   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:background="@drawable/login_card" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Maligaya Egg Farm" android:textColor="@color/dark_charcoal_green" android:textSize="12sp" android:textStyle="bold" /><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Receipt PT-1000-0089 · Maria Santos\nMedium · 60 eggs × ₱7 ........................ ₱420.00\nLarge · 30 eggs × ₱8 .......................... ₱240.00" android:textColor="@color/dark_charcoal_green" android:textSize="11sp" /><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Total · 90 eggs                                  ₱660.00\nCash received ₱1,000.00 · Change ₱340.00" android:textColor="@color/muted_gray_green" android:textSize="9sp" /></LinearLayout>
-   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:background="@drawable/status_success_card" android:orientation="vertical" android:padding="12dp"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✓  Saved locally. Sale is final." android:textColor="@color/status_success" android:textSize="12sp" android:textStyle="bold" /><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="This receipt is saved on this device and will sync automatically when internet returns." android:textColor="@color/dark_charcoal_green" android:textSize="11sp" /><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="" android:textColor="@color/muted_gray_green" android:textSize="9sp" /></LinearLayout>
-   <TextView android:id="@+id/start_sale" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp" android:background="@drawable/signin_button" android:gravity="center" android:text="＋  Start another sale" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold" />
-   <TextView android:id="@+id/view_shift" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp" android:background="@drawable/signin_button" android:gravity="center" android:text="▤  View my shift summary" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold" />
-  </LinearLayout>
- </ScrollView>
- <include layout="@layout/pt_bottom_nav" />
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/off_white" android:orientation="vertical">
+    <include layout="@layout/pt_header" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:id="@+id/page_content" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingStart="18dp" android:paddingEnd="18dp" android:paddingBottom="12dp">
+            <ProgressBar android:id="@+id/receipt_loading" android:layout_width="32dp" android:layout_height="32dp"
+                android:layout_gravity="center_horizontal" android:layout_margin="12dp" android:visibility="gone" />
+            <TextView android:id="@+id/receipt_error" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@drawable/status_error_card" android:padding="12dp" android:textColor="@color/status_error"
+                android:textSize="11sp" android:visibility="gone" />
+            <LinearLayout android:id="@+id/receipt_details" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="58dp" android:layout_height="58dp" android:layout_gravity="center_horizontal" android:layout_marginTop="18dp"
+                    android:background="@drawable/role_chip" android:gravity="center" android:text="✓" android:textColor="@color/farm_green" android:textSize="30sp" />
+                <TextView android:id="@+id/receipt_total" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+                    android:paddingTop="6dp" android:paddingBottom="6dp" android:textColor="@color/dark_charcoal_green" android:textSize="21sp" android:textStyle="bold" />
+                <TextView android:id="@+id/receipt_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+                    android:paddingTop="4dp" android:paddingBottom="8dp" android:textColor="@color/muted_gray_green" android:textSize="11sp" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"
+                    android:background="@drawable/login_card" android:orientation="vertical" android:padding="12dp">
+                    <TextView android:id="@+id/receipt_farm" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:textColor="@color/dark_charcoal_green" android:textSize="12sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/receipt_number" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                        android:textColor="@color/muted_gray_green" android:textSize="10sp" />
+                    <LinearLayout android:id="@+id/receipt_items" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" android:orientation="vertical" />
+                    <TextView android:id="@+id/receipt_payment" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp"
+                        android:textColor="@color/muted_gray_green" android:textSize="10sp" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"
+                    android:background="@drawable/status_success_card" android:orientation="vertical" android:padding="12dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✓  Saved locally. Sale is final."
+                        android:textColor="@color/status_success" android:textSize="12sp" android:textStyle="bold" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                        android:text="This receipt is saved on this device. Sync is not connected in this phase."
+                        android:textColor="@color/dark_charcoal_green" android:textSize="10sp" />
+                </LinearLayout>
+            </LinearLayout>
+            <TextView android:id="@+id/start_sale" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp"
+                android:background="@drawable/signin_button" android:gravity="center" android:text="＋  Start another sale"
+                android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold" android:visibility="gone" />
+            <TextView android:id="@+id/view_shift" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="5dp" android:layout_marginBottom="5dp"
+                android:background="@drawable/login_card" android:gravity="center" android:text="▤  View my shift summary"
+                android:textColor="@color/farm_green" android:textSize="12sp" android:textStyle="bold" android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+    <include layout="@layout/pt_bottom_nav" />
 </LinearLayout>

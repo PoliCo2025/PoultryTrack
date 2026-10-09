@@ -2,7 +2,7 @@
 
 PoultryTrack is an Android UI prototype for recording poultry egg sales and tracking farm inventory. It is designed around a small farm workflow, with quick access to point of sale, harvest entry, stock views, and farm reports.
 
-> **Current status:** The Figma-inspired Android UI, Room data foundation, and Phase 2 local business services are in place. The UI still displays presentation samples and is not connected to the database. Authentication, runtime authorization, networking, reports, and offline synchronization are not implemented.
+> **Current status:** The Figma-inspired Android UI, Room data foundation, and local business services are in place. Phase 3A connects the POS and saved receipt screens to local database data and transactional checkout. Other screens still display presentation samples. Authentication, runtime authorization, networking, reports, and offline synchronization are not implemented.
 
 > **Not production-ready:** Do not use the current app or local services to process real farm transactions. Authentication and role-based authorization are not implemented, the UI is not connected to these services, and local validation does not establish a trusted user or device.
 
@@ -17,7 +17,9 @@ PoultryTrack is an Android UI prototype for recording poultry egg sales and trac
 - User management and egg pricing
 - Sync status and More
 
-The screens are XML layouts under `app/src/main/res/layout`. `MainActivity` handles the current screen navigation; database access is not wired into Activities.
+The screens are XML layouts under `app/src/main/res/layout`. `MainActivity` handles screen navigation and POS rendering; POS database reads run through `PosRepository` and checkout runs through `PosController`/`SalesService` on a background executor. Other screens remain disconnected from the database.
+
+The POS uses the sole existing open shift in the local database as its current operational context. If there is no open shift, multiple open shifts, an inactive/missing farm or user, or no registered device, checkout is blocked with an explanation. Products are read from the Room catalog; price and stock are never fabricated. A usable sale also requires an effective PHP price and sufficient ledger stock. The current login and shift setup screens do not create authenticated sessions or operational records, so a fresh installation cannot complete a sale. A single open shift is only local context and does not provide authentication or runtime authorization.
 
 ## Local data foundation
 
@@ -49,7 +51,7 @@ Run local unit tests and connected Room/service instrumentation tests with:
 ./gradlew :app:testDebugUnitTest :app:connectedDebugAndroidTest
 ```
 
-Instrumented database tests cover Room persistence, foreign keys, effective price history, immutable sale snapshots, unique receipts, ledger balances, shifts, adjustments, outbox/audit records, atomic sale/harvest writes, multi-product ledger events, farm-scoped usernames, and schema migrations. Phase 2 service tests additionally cover validation, rollback, stock isolation, idempotency, approvals, immediate price changes, rejected backdating, preserved sale-price snapshots, cash reconciliation, and migrations. Run them on a connected Android device or emulator with:
+Instrumented database tests cover Room persistence, foreign keys, effective price history, immutable sale snapshots, unique receipts, ledger balances, shifts, adjustments, outbox/audit records, atomic sale/harvest writes, multi-product ledger events, farm-scoped usernames, and schema migrations. Service tests cover validation, rollback, stock isolation, idempotency, approvals, immediate price changes, rejected backdating, preserved sale-price snapshots, cash reconciliation, and migrations. POS tests cover catalog/context loading, database prices and stock, unavailable data states, cart totals, persisted receipt data, inventory posting, and recovery of a repeated sale request. Run tests on a connected Android device or emulator with:
 
 ```shell
 ./gradlew :app:connectedDebugAndroidTest
@@ -91,7 +93,7 @@ The app is branded PoultryTrack, while the Android namespace and application ID 
 
 ## Scope boundaries
 
-Phase 2 adds local business calculations and service operations only. It does not connect services to UI screens or implement authentication, runtime role authorization, network requests, a sync engine, or report calculations. The Android namespace and application ID still use the earlier `com.example.syncore` identifier, and the theme is still named `Theme.Syncore`.
+Phase 2 added local business calculations and service operations. Phase 3A connects only POS and Sale Complete/Receipt to those services. Harvest, inventory, adjustment, pricing, shift, reports, and user-management screens remain sample UI. Authentication, runtime role authorization, network requests, a sync engine, and report calculations are not implemented. The Android namespace and application ID still use the earlier `com.example.syncore` identifier, and the theme is still named `Theme.Syncore`.
 
 ## Phase 1.5 architecture decisions
 
